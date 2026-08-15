@@ -122,10 +122,11 @@ export function BotDashboard() {
   }, [state?.qr])
 
   const isPhonePairing = state?.pairingMethod === 'phone' || state?.status === 'pairing-phone' || state?.status === 'pairing-code'
+  const isConnected = state?.status === 'connected'
   const isPairingInProgress = state?.status === 'starting' || state?.status === 'qr' || state?.status === 'pairing-phone' || state?.status === 'pairing-code' || state?.status === 'reconnecting'
-  const isPairingLocked = state?.status === 'connected' || isPairingInProgress
   const activePairingMethod = state?.pairingMethod ?? pairingMethod
-  const isAlternatePairingMethod = (method: 'qr' | 'phone') => isPairingLocked && activePairingMethod !== method
+  const isAlternatePairingMethod = (method: 'qr' | 'phone') => isConnected && activePairingMethod !== method
+  const isPairingRequestLocked = applyingPairing || isPairingInProgress || isConnected
 
   const applyPairingSelection = useCallback(async () => {
     if (pairingMethod === 'phone' && !phoneNumber.trim()) {
@@ -295,7 +296,7 @@ export function BotDashboard() {
                 type="button"
                 className="h-10 w-full rounded-xl text-[11px] font-semibold"
                 onClick={() => void applyPairingSelection()}
-                disabled={applyingPairing || isPairingLocked}
+                disabled={isPairingRequestLocked}
               >
                 {applyingPairing ? 'Requesting pairing code...' : 'Get Pairing Code'}
               </Button>
