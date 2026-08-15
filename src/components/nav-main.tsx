@@ -69,9 +69,9 @@ export function NavMain({
   }
 
   return (
-    <SidebarGroup className="py-1">
-      {label && <SidebarGroupLabel className="mb-1 px-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</SidebarGroupLabel>}
-      <SidebarMenu className="gap-1">
+    <SidebarGroup className="px-0 py-1.5">
+      {label && <SidebarGroupLabel className="mb-1 h-6 px-2.5 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/55">{label}</SidebarGroupLabel>}
+      <SidebarMenu className="gap-0.5">
         {isSearching && items.length === 0 ? null : (
         items.map((item) => {
           const hasChildren = !!item.items?.length
@@ -89,21 +89,22 @@ export function NavMain({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip={item.title}
-                  className={`group relative h-10 justify-start rounded-lg px-2.5 py-2 transition-colors ${isActive ? "bg-muted/80 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"}`}
+                  className={`group relative h-10 justify-start rounded-lg px-2 py-2 transition-all ${isActive ? "bg-sidebar-accent/80 text-foreground shadow-sm ring-1 ring-sidebar-border/50" : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"}`}
                   onClick={() => handleToggle(item.title, hasChildren, item.page)}
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md">
+                  {isActive && <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full" style={{ backgroundColor: sectionColor }} />}
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${isActive ? "bg-background/70" : "bg-sidebar-accent/35 group-hover:bg-background/50"}`}>
                     <item.icon
-                      className="size-[14px] shrink-0 transition-colors"
+                      className="size-[15px] shrink-0 transition-colors"
                       style={{ color: sectionColor }}
                     />
                   </div>
                   <span
-                    className={`flex-1 text-[11px] font-medium leading-tight ${isActive ? "text-foreground/90" : "text-foreground/90"}`}
+                    className="flex-1 text-[11px] font-semibold leading-tight text-foreground/85"
                   >
                     {item.title}
                   </span>
-                  {hasChildren && <ChevronRight className={`size-3.5 transition-all ${isOpen ? "rotate-90" : ""}`} />}
+                  {hasChildren && <ChevronRight className={`size-3.5 text-muted-foreground/60 transition-all ${isOpen ? "rotate-90 text-foreground" : ""}`} />}
                 </SidebarMenuButton>
 
                 {hasChildren ? (
@@ -131,11 +132,12 @@ export function NavMain({
                             return (
                               <SidebarMenuSubItem key={subItem.title}>
                                 <SidebarMenuSubButton
-                                  className={`relative rounded-md px-2.5 py-2 text-[11px] transition-colors ${isActive ? "bg-muted/80 font-semibold shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"}`}
+                                  className={`relative rounded-md px-2.5 py-2 text-[11px] transition-all ${isActive ? "bg-sidebar-accent/65 font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:bg-sidebar-accent/55 hover:text-foreground"}`}
                                   onClick={() => {
                                     if (subItem.page) onSubItemClick?.(subItem.page)
                                   }}
                                 >
+                                  {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-sidebar-primary" />}
                                   <span className={`font-medium leading-tight ${isActive ? "font-semibold" : ""}`}>{subItem.title}</span>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>

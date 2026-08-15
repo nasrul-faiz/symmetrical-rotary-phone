@@ -222,23 +222,23 @@ export function AppSidebar({
       <Sidebar variant="floating" {...props}>
 
         {/* ── Header — workspace switcher ───────────────────── */}
-        <SidebarHeader className="rounded-xl border border-sidebar-border/70 bg-sidebar/90 p-2 shadow-[inset_0_1px_0_hsl(var(--background)/0.12)]">
+        <SidebarHeader className="border-b border-sidebar-border/60 bg-gradient-to-b from-sidebar-accent/45 to-sidebar/70 p-2.5 pb-3">
           <SidebarMenu className="gap-0">
             <SidebarMenuItem>
               <DropdownMenu open={isWorkspaceDropdownOpen} onOpenChange={setIsWorkspaceDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="group/ws h-11 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/50 px-2.5 transition-colors hover:bg-sidebar-accent"
+                    className="group/ws h-14 rounded-xl border border-sidebar-border/70 bg-sidebar/75 px-2.5 shadow-sm transition-all hover:border-sidebar-border hover:bg-sidebar-accent/75 hover:shadow-md"
                   >
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${activeDropdownOption.color} text-white text-[13px] font-bold shrink-0 shadow-sm`}>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${activeDropdownOption.color} text-white text-[13px] font-bold shrink-0 shadow-sm ring-4 ring-background/20`}>
                       {activeDropdownOption.initial}
                     </div>
                     <div className="flex flex-col leading-tight min-w-0">
-                      <span className="truncate text-[13px] font-semibold">{activeDropdownOption.name}</span>
+                      <span className="truncate text-[13px] font-semibold tracking-[-0.01em]">{activeDropdownOption.name}</span>
                       <span className="truncate text-[11px] text-muted-foreground">{activeDropdownOption.description}</span>
                     </div>
-                    <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground/70 transition-transform group-data-[state=open]/ws:rotate-180" />
+                    <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground/60 transition-transform group-data-[state=open]/ws:rotate-180" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
 
@@ -307,7 +307,7 @@ export function AppSidebar({
         </SidebarHeader>
 
         {/* ── Content — collapsible nav groups ─────────────── */}
-        <SidebarContent className="gap-0 bg-sidebar px-0 py-1">
+        <SidebarContent className="gap-0 bg-sidebar/80 px-1.5 py-2">
           {navGroups.map((group) => (
             <NavMain
               key={group.label}
@@ -333,12 +333,12 @@ export function AppSidebar({
         </SidebarContent>
 
         {/* ── Footer — theme toggle ─────────────────────────── */}
-        <SidebarFooter className="border-t border-sidebar-border/70 bg-sidebar pt-2">
+        <SidebarFooter className="border-t border-sidebar-border/60 bg-sidebar/80 pt-2.5">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={toggleMode}
-                className="h-10 justify-start rounded-xl border border-sidebar-border/60 bg-sidebar-accent/50 px-3.5 transition-colors hover:bg-sidebar-accent"
+                className="h-10 justify-start rounded-xl border border-sidebar-border/60 bg-sidebar-accent/35 px-3 transition-all hover:border-sidebar-border hover:bg-sidebar-accent/75"
               >
                 {isDark
                   ? <Moon className="size-4 text-indigo-400" />

@@ -81,7 +81,10 @@ export function BotDashboard() {
 
           const nextState = payload.data as BotStatePayload
           setState(nextState)
-          if (nextState.pairingMethod === 'qr' || nextState.pairingMethod === 'phone') {
+          if (
+            (nextState.status === 'pairing-phone' || nextState.status === 'pairing-code' || nextState.status === 'connected') &&
+            (nextState.pairingMethod === 'qr' || nextState.pairingMethod === 'phone')
+          ) {
             setPairingMethod(nextState.pairingMethod)
           }
           if (nextState.pairingPhoneNumber) {
@@ -119,6 +122,10 @@ export function BotDashboard() {
   }, [state?.qr])
 
   const isPhonePairing = state?.pairingMethod === 'phone' || state?.status === 'pairing-phone' || state?.status === 'pairing-code'
+  const isPairingInProgress = state?.status === 'starting' || state?.status === 'qr' || state?.status === 'pairing-phone' || state?.status === 'pairing-code' || state?.status === 'reconnecting'
+  const isPairingLocked = state?.status === 'connected' || isPairingInProgress
+  const activePairingMethod = state?.pairingMethod ?? pairingMethod
+  const isAlternatePairingMethod = (method: 'qr' | 'phone') => isPairingLocked && activePairingMethod !== method
 
   const applyPairingSelection = useCallback(async () => {
     if (pairingMethod === 'phone' && !phoneNumber.trim()) {
@@ -218,14 +225,16 @@ export function BotDashboard() {
           <button
             type="button"
             onClick={() => setPairingMethod('qr')}
-            className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-medium transition-all ${pairingMethod === 'qr' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            disabled={isAlternatePairingMethod('qr')}
+            className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-medium transition-all ${pairingMethod === 'qr' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} disabled:cursor-not-allowed disabled:opacity-40`}
           >
             QR Code
           </button>
           <button
             type="button"
             onClick={() => setPairingMethod('phone')}
-            className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-medium transition-all ${pairingMethod === 'phone' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            disabled={isAlternatePairingMethod('phone')}
+            className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-medium transition-all ${pairingMethod === 'phone' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} disabled:cursor-not-allowed disabled:opacity-40`}
           >
             Phone Number
           </button>
@@ -286,7 +295,7 @@ export function BotDashboard() {
                 type="button"
                 className="h-10 w-full rounded-xl text-[11px] font-semibold"
                 onClick={() => void applyPairingSelection()}
-                disabled={applyingPairing}
+                disabled={applyingPairing || isPairingLocked}
               >
                 {applyingPairing ? 'Requesting pairing code...' : 'Get Pairing Code'}
               </Button>
