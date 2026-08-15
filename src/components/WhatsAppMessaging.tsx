@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { CalendarClock, ContactRound, FileAudio, FileText, Image, LoaderCircle, MessageCircleMore, Pencil, Plus, Search, Send, Smartphone, Trash2, Upload, UserRound, Video } from "lucide-react"
+import { CalendarClock, ContactRound, FileAudio, FileText, Image, LoaderCircle, MessageCircleMore, Pencil, Plus, Search, Send, Smartphone, Trash2, Upload, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -58,6 +58,80 @@ function getMediaType(file: File): 'image' | 'video' | 'audio' | 'document' {
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+}
+
+function getDeletedMediaPreviewUrl(message: DeletedMessage, token: string) {
+  if (!message.mediaPath) return null
+  return `${token ? `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}`}`
+}
+
+function getDeletedMediaLabel(message: DeletedMessage) {
+  if (!message.mediaType && !message.fileName) return 'Fail media'
+  if (message.mediaType === 'audio') return message.fileName ? message.fileName : 'Voice note'
+  if (message.mediaType === 'image') return message.fileName ? message.fileName : 'Image'
+  if (message.mediaType === 'video') return message.fileName ? message.fileName : 'Video'
+  return message.fileName ? message.fileName : 'Document'
+}
+
+function renderDeletedMedia(message: DeletedMessage, url: string | null) {
+  if (!url) {
+    return (
+      <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <Image className="size-4" />
+        {getDeletedMediaLabel(message)}
+      </p>
+    )
+  }
+
+  if (message.mediaType === 'image' || message.mediaType === 'sticker') {
+    return <img src={url} alt={getDeletedMediaLabel(message)} className="mt-3 max-h-80 rounded-md border" />
+  }
+
+  if (message.mediaType === 'video') {
+    return <video controls src={url} className="mt-3 max-h-80 rounded-md border" />
+  }
+
+  if (message.mediaType === 'audio') {
+    return (
+      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileAudio className="size-4 text-primary" />
+          <span>{getDeletedMediaLabel(message)}</span>
+        </div>
+        <audio controls src={url} className="w-full" />
+      </div>
+    )
+  }
+
+  const fileName = (message.fileName || '').toLowerCase()
+  const mimeType = (message.mimetype || '').toLowerCase()
+  const isPdf = mimeType.includes('pdf') || fileName.endsWith('.pdf')
+  const isTextLike = mimeType.startsWith('text/') || ['.txt', '.md', '.csv', '.json'].some((ext) => fileName.endsWith(ext))
+
+  if (isPdf || isTextLike || mimeType.includes('json') || mimeType.includes('xml')) {
+    return (
+      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="size-4 text-primary" />
+          <span>{getDeletedMediaLabel(message)}</span>
+        </div>
+        <iframe title={getDeletedMediaLabel(message)} src={url} className="h-72 w-full rounded-md border bg-white" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <FileText className="size-4 text-primary" />
+        <span>{getDeletedMediaLabel(message)}</span>
+      </div>
+      <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+        <FileText className="size-4" />
+        Buka fail
+      </a>
+    </div>
+  )
 }
 
 export function WhatsAppMessaging({ page }: WhatsAppMessagingProps) {
@@ -740,7 +814,7 @@ function DeletedMessages() {
   }, [token])
 
   useEffect(() => { void loadMessages() }, [loadMessages])
-  const mediaUrl = (message: DeletedMessage) => message.mediaPath ? `${token ? `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}`}` : null
+  const mediaUrl = (message: DeletedMessage) => getDeletedMediaPreviewUrl(message, token)
   const groupedMessages = useMemo(() => {
     const grouped = new Map<string, DeletedMessage[]>()
     for (const message of messages) {
@@ -793,10 +867,7 @@ function DeletedMessages() {
                         <p className="text-[11px] text-muted-foreground">Dipadam {formatDate(message.deletedAt)}</p>
                       </div>
                       {message.text ? <p className="mt-2 whitespace-pre-wrap text-sm">{message.text}</p> : null}
-                      {url && message.mediaType === 'image' ? <img src={url} alt={message.fileName || 'Media dipadam'} className="mt-3 max-h-80 rounded-md border" /> : null}
-                      {url && (message.mediaType === 'audio' || message.mediaType === 'video') ? <div className="mt-3">{message.mediaType === 'audio' ? <FileAudio className="mb-1 size-4 text-muted-foreground" /> : <Video className="mb-1 size-4 text-muted-foreground" />}{message.mediaType === 'audio' ? <audio controls src={url} /> : <video controls src={url} className="max-h-80 rounded-md" />}</div> : null}
-                      {url && !['image', 'audio', 'video'].includes(message.mediaType || '') ? <a href={url} download={message.fileName || undefined} className="mt-3 inline-flex items-center gap-2 text-sm text-primary hover:underline"><FileText className="size-4" />{message.fileName || 'Muat turun fail arkib'}</a> : null}
-                      {message.mediaType && !url ? <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"><Image className="size-4" />{message.fileName || `${message.mediaType} telah direkodkan, tetapi fail tidak dapat diarkibkan.`}</p> : null}
+                      {renderDeletedMedia(message, url)}
                     </div>
                   )
                 })}
