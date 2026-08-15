@@ -15,6 +15,7 @@ import { unzipTextFromBase64 } from '../src/zip.js';
 import {
   buildInteractiveButtonsFromCustom,
   buildTtsAudioMessage,
+  captureMessageForAudit,
   clearDeletedMessageLogs,
   createAuthStatePersistenceController,
   executeCommand,
@@ -205,6 +206,33 @@ test('records deleted messages even when the original record is not cached', () 
   clearDeletedMessageLogs();
 });
 
+test('captures incoming message content before delete and preserves it in the deleted log', async () => {
+  clearDeletedMessageLogs();
+
+  await captureMessageForAudit({
+    key: {
+      id: 'incoming-delete-1',
+      remoteJid: '60123456789@s.whatsapp.net',
+      fromMe: false,
+    },
+    messageTimestamp: Math.floor(Date.now() / 1000),
+    message: {
+      conversation: 'hello from captured message',
+    },
+  });
+
+  const recorded = recordDeletedMessage({
+    remoteJid: '60123456789@s.whatsapp.net',
+    id: 'incoming-delete-1',
+  }, 'Pesan dipadam untuk semua');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs().length, 1);
+  assert.equal(getDeletedMessageLogs()[0].text, 'hello from captured message');
+
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });
@@ -373,8 +401,11 @@ test('saved bot contacts can be synced to disk and found by name lookup', async 
 
     const reply = await executeCommand('.cacun', { commandPrefix: '.' });
     assert.equal(reply.type, 'contact-card');
+    assert.match(reply.text, /Contact 🪪/i);
     assert.match(reply.text, /Name: Acun/i);
-    assert.match(reply.text, /Phone: \+60123456789/i);
+    assert.match(reply.text, /Category: Customer/i);
+    assert.match(reply.text, /Note: Pelanggan utama/i);
+    assert.doesNotMatch(reply.text, /Phone:/i);
   } finally {
     if (previousContactsPath === undefined) delete process.env.BOT_CONTACTS_FILE;
     else process.env.BOT_CONTACTS_FILE = previousContactsPath;

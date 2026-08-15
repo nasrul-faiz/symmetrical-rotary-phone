@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { neon } from '@neondatabase/serverless';
 import { createInterface } from 'node:readline/promises';
 import { config as loadDotenv } from 'dotenv';
 import axios from 'axios';
@@ -252,6 +253,7 @@ const DEFAULT_TIMEZONE = String(process.env.BOT_TIMEZONE || 'Asia/Kuala_Lumpur')
 const BOT_SETTINGS_PATH = path.join(botDir, '.bot-settings.json');
 const BOT_CONTACTS_FILE = path.resolve(process.env.BOT_CONTACTS_FILE || path.join(botDir, '.contacts.json'));
 const DELETED_MESSAGE_LOG_PATH = path.join(botDir, '.bot-deleted-messages.json');
+const BOT_CONTACTS_TABLE = 'bot_contacts';
 const DELETED_MESSAGE_MEDIA_DIR = path.join(botDir, '.deleted-message-media');
 const MAX_DELETED_MESSAGE_LOGS = 250;
 const DEFAULT_PRAYER_CITY = String(process.env.BOT_PRAYER_CITY || 'Kuala Lumpur').trim() || 'Kuala Lumpur';
@@ -343,7 +345,7 @@ function getMessageAuditText(message = {}) {
   return media?.content?.caption || '';
 }
 
-async function captureMessageForAudit(msg) {
+export async function captureMessageForAudit(msg) {
   const message = normalizeIncomingMessage(msg?.message);
   const messageId = String(msg?.key?.id || '').trim();
   const chatJid = String(msg?.key?.remoteJid || '').trim();
@@ -1789,6 +1791,56 @@ function normalizeBotContact(contact) {
   };
 }
 
+function getBotContactsDatabaseSql() {
+  const databaseUrl = String(process.env.DATABASE_URL || '').trim().replace(/^['"]|['"]$/g, '');
+  if (!databaseUrl) return null;
+
+  try {
+    return neon(databaseUrl);
+  } catch (error) {
+    console.warn('Failed to initialize bot contacts database client:', error?.message || error);
+    return null;
+  }
+}
+
+async function syncBotContactsToDatabase(contacts = []) {
+  const sql = getBotContactsDatabaseSql();
+  if (!sql || !Array.isArray(contacts)) return;
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS bot_contacts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'Other',
+        note TEXT DEFAULT '',
+        avatar TEXT DEFAULT NULL,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    for (const contact of contacts) {
+      const normalized = normalizeBotContact(contact);
+      if (!normalized) continue;
+
+      await sql`
+        INSERT INTO bot_contacts (id, name, phone, category, note, avatar, updated_at)
+        VALUES (${normalized.id}, ${normalized.name}, ${normalized.phone}, ${normalized.category}, ${normalized.note}, ${normalized.avatar}, NOW())
+        ON CONFLICT (id) DO UPDATE
+          SET name = EXCLUDED.name,
+              phone = EXCLUDED.phone,
+              category = EXCLUDED.category,
+              note = EXCLUDED.note,
+              avatar = EXCLUDED.avatar,
+              updated_at = NOW()
+      `;
+    }
+  } catch (error) {
+    console.warn('Failed to sync bot contacts to database:', error?.message || error);
+  }
+}
+
 export function saveBotContacts(contacts = []) {
   const contactsFilePath = getBotContactsFilePath();
   const normalizedContacts = Array.isArray(contacts)
@@ -1803,11 +1855,13 @@ export function saveBotContacts(contacts = []) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(contactsFilePath, `${JSON.stringify(normalizedContacts, null, 2)}\n`, 'utf8');
-    return normalizedContacts;
   } catch (error) {
     console.warn('Failed to write bot contacts file:', error?.message || error);
     return [];
   }
+
+  void syncBotContactsToDatabase(normalizedContacts);
+  return normalizedContacts;
 }
 
 export function readBotContacts() {
@@ -1851,14 +1905,17 @@ function findBotContactById(id = '') {
 }
 
 function formatContactReplyText(contact) {
-  const details = [
-    `Name: ${contact.name}`,
-    `Phone: ${contact.phone}`,
-    contact.category ? `Category: ${contact.category}` : null,
-    contact.note ? `Note: ${contact.note}` : null,
-  ].filter(Boolean);
+  const category = contact.category || 'Other';
+  const note = contact.note ? contact.note : '-';
 
-  return `Contact\n${details.join('\n')}`;
+  return [
+    'Contact 🪪',
+    '',
+    `Name: ${contact.name}`,
+    `Category: ${category}`,
+    '',
+    `Note: ${note}`,
+  ].join('\n');
 }
 
 function buildContactActionButtons(contact) {
