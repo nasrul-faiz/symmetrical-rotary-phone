@@ -25,6 +25,7 @@ import {
   normalizeGroupAllowlist,
   normalizePhoneNumber,
   normalizePairingSelection,
+  recordDeletedMessage,
   removeDeletedMessageRecordsByChatId,
   saveBotContacts,
   setBotMessageBehaviorSettings,
@@ -187,6 +188,21 @@ test('removes deleted message logs by chat id and clears all logs', () => {
 
   clearDeletedMessageLogs();
   assert.deepEqual(getDeletedMessageLogs(), []);
+});
+
+test('records deleted messages even when the original record is not cached', () => {
+  clearDeletedMessageLogs();
+
+  const recorded = recordDeletedMessage({
+    remoteJid: '60123456789@s.whatsapp.net',
+    id: 'deleted-for-everyone-1',
+  }, 'Pesan dipadam untuk semua');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs().length, 1);
+  assert.equal(getDeletedMessageLogs()[0].text, 'Pesan dipadam untuk semua');
+
+  clearDeletedMessageLogs();
 });
 
 test('normalizes phone numbers for pairing', () => {

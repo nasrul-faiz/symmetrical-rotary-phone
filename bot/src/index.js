@@ -387,18 +387,39 @@ async function captureMessageForAudit(msg) {
   }
 }
 
-function recordDeletedMessage(key = {}) {
-  const chatJid = String(key.remoteJid || '').trim();
-  const messageId = String(key.id || '').trim();
-  if (!chatJid || !messageId) return;
-  const captured = capturedMessages.get(`${chatJid}|${messageId}`);
-  if (!captured) return;
+function normalizeDeletedMessageKey(rawKey = {}) {
+  const key = rawKey?.key || rawKey || {};
+  const remoteJid = String(key.remoteJid || rawKey?.remoteJid || '').trim();
+  const id = String(key.id || rawKey?.id || '').trim();
+  if (!remoteJid || !id) return null;
+  return { remoteJid, id };
+}
+
+export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipadamkan.') {
+  const normalized = normalizeDeletedMessageKey(key);
+  if (!normalized) return false;
+
+  const { remoteJid: chatJid, id: messageId } = normalized;
+  const captured = capturedMessages.get(`${chatJid}|${messageId}`) || {
+    id: messageId,
+    chatJid,
+    senderJid: null,
+    fromMe: false,
+    timestamp: new Date().toISOString(),
+    text: fallbackText,
+    mediaType: null,
+    fileName: null,
+    mimetype: null,
+    mediaPath: null,
+  };
 
   const logs = loadDeletedMessageLogs();
-  if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return;
+  if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return false;
+
   logs.unshift({ ...captured, deletedAt: new Date().toISOString() });
   deletedMessageLogs = logs.slice(0, MAX_DELETED_MESSAGE_LOGS);
   saveDeletedMessageLogs();
+  return true;
 }
 
 export function getDeletedMessageLogs() {
@@ -3647,11 +3668,29 @@ export async function startBot(overrides = {}) {
     }
   });
 
-  sock.ev.on('messages.update', (updates) => {
+  sock.ev.on('messages.update', (updates = []) => {
     for (const update of updates) {
       const protocolMessage = update?.update?.message?.protocolMessage;
-      if (protocolMessage?.type === 0 && protocolMessage.key) {
-        recordDeletedMessage(protocolMessage.key);
+      if (protocolMessage?.key) {
+        recordDeletedMessage(protocolMessage.key, 'Pesan dipadam untuk semua');
+      }
+      const messageStubType = update?.update?.message?.messageStubType;
+      if (messageStubType && update?.key) {
+        recordDeletedMessage(update.key, 'Pesan dipadam untuk semua');
+      }
+    }
+  });
+
+  sock.ev.on('messages.delete', (deleteEvents = []) => {
+    const normalizedDeleteEvents = Array.isArray(deleteEvents) ? deleteEvents : [deleteEvents];
+    for (const deleteEvent of normalizedDeleteEvents) {
+      const deleteKeys = Array.isArray(deleteEvent?.keys) ? deleteEvent.keys : [deleteEvent];
+      for (const item of deleteKeys) {
+        if (item?.key) {
+          recordDeletedMessage(item.key, 'Pesan dipadam untuk semua');
+        } else {
+          recordDeletedMessage(item, 'Pesan dipadam untuk semua');
+        }
       }
     }
   });
