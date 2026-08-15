@@ -1,0 +1,23 @@
+[
+  {
+    "id": "a1",
+    "chatJid": "1234567890@g.us",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "deletedAt": "2024-01-01T00:00:00.000Z",
+    "text": "first"
+  },
+  {
+    "id": "b1",
+    "chatJid": "60123456789@s.whatsapp.net",
+    "senderJid": "60111111111@s.whatsapp.net",
+    "deletedAt": "2024-01-02T00:00:00.000Z",
+    "text": "second"
+  },
+  {
+    "id": "c1",
+    "chatJid": "1234567890@g.us",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "deletedAt": "2024-01-03T00:00:00.000Z",
+    "text": "third"
+  }
+]

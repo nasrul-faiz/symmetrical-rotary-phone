@@ -1,0 +1,26 @@
+[
+  {
+    "id": "c1",
+    "name": "Aisyah Rahman",
+    "phone": "+60123456789",
+    "category": "Customer",
+    "note": "Follow up on order status",
+    "avatar": null
+  },
+  {
+    "id": "c2",
+    "name": "Syarikat Maju",
+    "phone": "+60182345678",
+    "category": "Supplier",
+    "note": "Main supplier for packaging",
+    "avatar": null
+  },
+  {
+    "id": "c3",
+    "name": "Support Desk",
+    "phone": "+60388888888",
+    "category": "Support",
+    "note": "For technical issues",
+    "avatar": null
+  }
+]
