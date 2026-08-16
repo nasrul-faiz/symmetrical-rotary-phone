@@ -317,6 +317,34 @@ test('extracts nested revoke payloads when the message key sits inside update.me
   clearDeletedMessageLogs();
 });
 
+test('treats protocol upsert events as deleted-message events even when the message type is not notify', () => {
+  clearDeletedMessageLogs();
+
+  const msg = {
+    key: {
+      id: 'protocol-revoke-1',
+      remoteJid: '60123456789@s.whatsapp.net',
+      fromMe: false,
+    },
+    message: {
+      protocolMessage: {
+        type: 'REVOKE',
+        key: {
+          id: 'protocol-revoke-1',
+          remoteJid: '60123456789@s.whatsapp.net',
+          fromMe: false,
+        },
+      },
+    },
+    messageTimestamp: Math.floor(Date.now() / 1000),
+  };
+
+  const recorded = recordDeletedMessage(msg, 'Mesej dipadam.');
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs()[0].id, 'protocol-revoke-1');
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });

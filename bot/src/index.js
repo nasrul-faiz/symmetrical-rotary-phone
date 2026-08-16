@@ -3644,11 +3644,17 @@ export async function startBot(overrides = {}) {
       return;
     }
 
-    if (type !== 'notify') return;
-
     for (const msg of messages) {
       try {
         void captureMessageForAudit(msg);
+
+        const protocolMessage = msg?.message?.protocolMessage || null;
+        const messageStubType = msg?.message?.messageStubType ?? msg?.messageStubType ?? null;
+        if (protocolMessage || messageStubType !== null || type === 'protocol') {
+          recordDeletedMessage(msg, 'Mesej dipadam.');
+        }
+
+        if (type !== 'notify') continue;
         if (!shouldProcessIncomingMessage(msg)) continue;
         if (msg.key.remoteJid === 'status@broadcast') continue;
         const normalizedMessage = normalizeIncomingMessage(msg.message);
