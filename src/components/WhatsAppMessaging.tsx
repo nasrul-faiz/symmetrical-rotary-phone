@@ -24,8 +24,8 @@ const pageConfig: Record<string, { title: string; description: string; icon: typ
     icon: CalendarClock,
   },
   "bot-delete-message": {
-    title: "Paparan Mesej Yang Dipadam",
-    description: "Rekod semua mesej, media, dan perbualan yang dipadam supaya anda boleh semak semula dengan mudah.",
+    title: "Mesej Dipadam",
+    description: "Semak semula mesej, media, dan perbualan yang dipadam supaya anda boleh lihat kembali kandungannya.",
     icon: Trash2,
   },
   "bot-contact": {
@@ -851,7 +851,7 @@ function DeletedMessages() {
 
   if (loading) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Memuatkan rekod...</div>
   if (error) return <div className="rounded-lg border border-destructive/40 bg-card p-5 text-sm text-destructive">{error}</div>
-  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada rekod mesej yang dipadam buat masa ini.</div>
+  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada mesej yang dipadam untuk dilihat semula buat masa ini.</div>
 
   return (
     <div className="space-y-4">
@@ -898,7 +898,7 @@ function DeletedMessages() {
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
                 <p className="text-sm font-semibold">{selectedChat?.title ?? 'Deleted conversation'}</p>
-                <p className="text-[11px] text-muted-foreground">Rekod mesej yang dipadam untuk perbualan ini</p>
+                <p className="text-[11px] text-muted-foreground">Mesej yang dipadam untuk perbualan ini boleh dilihat semula</p>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={() => setSelectedChat(null)}>Tutup</Button>
             </div>

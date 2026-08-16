@@ -142,7 +142,7 @@ const botNavGroups: NavGroup[] = [
         items: [
           { title: "Send Chat", url: "#", page: "bot-send-chat" },
           { title: "Schedule Chat", url: "#", page: "bot-schedule-chat" },
-          { title: "Paparan Mesej Yang Dipadam", url: "#", page: "bot-delete-message" },
+          { title: "Mesej Dipadam", url: "#", page: "bot-delete-message" },
           { title: "Contact", url: "#", page: "bot-contact" },
         ],
       },
