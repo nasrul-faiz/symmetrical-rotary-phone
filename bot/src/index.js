@@ -390,8 +390,9 @@ export async function captureMessageForAudit(msg) {
 }
 
 function buildDeletedMessageCapturePayload(rawPayload = {}) {
-  const normalizedKey = rawPayload?.key || rawPayload || {};
-  const message = rawPayload?.message || rawPayload?.update?.message || rawPayload?.data?.message || null;
+  const protocolMessage = rawPayload?.update?.message?.protocolMessage || rawPayload?.message?.protocolMessage || rawPayload?.protocolMessage || rawPayload?.data?.protocolMessage || null;
+  const normalizedKey = rawPayload?.key || protocolMessage?.key || rawPayload || {};
+  const message = rawPayload?.message || rawPayload?.update?.message || rawPayload?.data?.message || protocolMessage?.message || null;
   const key = {
     id: normalizedKey?.id || rawPayload?.id || '',
     remoteJid: normalizedKey?.remoteJid || rawPayload?.remoteJid || '',
@@ -411,9 +412,10 @@ function buildDeletedMessageCapturePayload(rawPayload = {}) {
 }
 
 function normalizeDeletedMessageKey(rawKey = {}) {
-  const key = rawKey?.key || rawKey || {};
-  const remoteJid = String(key.remoteJid || rawKey?.remoteJid || '').trim();
-  const id = String(key.id || rawKey?.id || '').trim();
+  const protocolMessage = rawKey?.update?.message?.protocolMessage || rawKey?.message?.protocolMessage || rawKey?.protocolMessage || rawKey?.data?.protocolMessage || null;
+  const nestedKey = protocolMessage?.key || rawKey?.key || rawKey || {};
+  const remoteJid = String(nestedKey.remoteJid || rawKey?.remoteJid || protocolMessage?.remoteJid || '').trim();
+  const id = String(nestedKey.id || rawKey?.id || protocolMessage?.id || '').trim();
   if (!remoteJid || !id) return null;
   return { remoteJid, id };
 }

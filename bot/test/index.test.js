@@ -255,6 +255,32 @@ test('records deleted message content when the delete payload includes the origi
   clearDeletedMessageLogs();
 });
 
+test('records delete-for-everyone payloads that arrive in nested Baileys protocolMessage format', () => {
+  clearDeletedMessageLogs();
+
+  const recorded = recordDeletedMessage({
+    update: {
+      message: {
+        protocolMessage: {
+          type: 'REVOKE',
+          key: {
+            id: 'revoked-message-1',
+            remoteJid: '60123456789@s.whatsapp.net',
+            fromMe: false,
+          },
+        },
+      },
+    },
+  }, 'Pesan dipadam untuk semua');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs().length, 1);
+  assert.equal(getDeletedMessageLogs()[0].id, 'revoked-message-1');
+  assert.equal(getDeletedMessageLogs()[0].chatJid, '60123456789@s.whatsapp.net');
+
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });
