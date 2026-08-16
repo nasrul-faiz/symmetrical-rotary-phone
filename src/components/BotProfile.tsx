@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MessageCircle, RefreshCw, UserRound, Phone, Activity, Link2, CircleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { normalizeConnectedBotProfile } from '@/lib/bot-profile'
 
 type BotStatus = 'disabled' | 'starting' | 'qr' | 'pairing-phone' | 'pairing-code' | 'connected' | 'closed' | 'reconnecting' | 'logged-out' | 'error'
 
@@ -11,6 +12,9 @@ type BotStatePayload = {
   qr: string | null
   pairingMethod: 'qr' | 'phone' | null
   pairingPhoneNumber: string | null
+  connectedPhoneNumber: string | null
+  displayName: string | null
+  profileImageUrl: string | null
   pairingCode: string | null
   updatedAt: string | null
   lastError: string | null
@@ -92,8 +96,13 @@ export function BotProfile() {
     return () => window.clearInterval(timer)
   }, [fetchStatus])
 
-  const connectedPhone = state?.pairingPhoneNumber || '-'
-  const displayName = connectedPhone !== '-' ? `WhatsApp ${connectedPhone}` : 'WhatsApp Account'
+  const connectedPhone = state?.connectedPhoneNumber || state?.pairingPhoneNumber || '-'
+  const profile = normalizeConnectedBotProfile({
+    displayName: state?.displayName,
+    phoneNumber: connectedPhone === '-' ? null : connectedPhone,
+    profileImageUrl: state?.profileImageUrl,
+  })
+  const displayName = profile.displayName
   const aboutText = state?.enabled
     ? 'Manage your bot profile, account settings, and command behavior.'
     : 'Bot is disabled. Enable WhatsApp bot and connect to continue.'
@@ -133,7 +142,11 @@ export function BotProfile() {
             <div className="flex items-center gap-4">
               <div className={`relative h-16 w-16 shrink-0 rounded-full border border-border/60 bg-gradient-to-br ${avatarTone} shadow-sm ring-4 ring-background flex items-center justify-center overflow-hidden`}>
                 <div className="absolute inset-0 bg-black/10" />
-                <span className="relative text-lg font-bold text-white drop-shadow-sm">{initials}</span>
+                {profile.profileImageUrl ? (
+                  <img src={profile.profileImageUrl} alt={displayName} className="relative h-full w-full object-cover" />
+                ) : (
+                  <span className="relative text-lg font-bold text-white drop-shadow-sm">{initials}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-lg md:text-xl font-bold leading-tight truncate">{displayName}</p>

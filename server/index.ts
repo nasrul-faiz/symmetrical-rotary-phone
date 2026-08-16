@@ -41,6 +41,9 @@ type BotRuntimeState = {
   qr: string | null;
   pairingMethod: 'qr' | 'phone' | null;
   pairingPhoneNumber: string | null;
+  connectedPhoneNumber: string | null;
+  displayName: string | null;
+  profileImageUrl: string | null;
   pairingCode: string | null;
   updatedAt: string | null;
   lastError: string | null;
@@ -52,6 +55,9 @@ const botState: BotRuntimeState = {
   qr: null,
   pairingMethod: null,
   pairingPhoneNumber: null,
+  connectedPhoneNumber: null,
+  displayName: null,
+  profileImageUrl: null,
   pairingCode: null,
   updatedAt: null,
   lastError: null,
@@ -121,6 +127,8 @@ app.post('/api/bot/pairing', ensureDashboardAuth, async (req: any, res: any) => 
     botState.qr = null
     botState.pairingMethod = nextPairingMethod
     botState.pairingPhoneNumber = nextPhoneNumber
+    botState.connectedPhoneNumber = nextPhoneNumber
+    botState.displayName = nextPhoneNumber ? `WhatsApp ${nextPhoneNumber}` : botState.displayName
     botState.pairingCode = null
     botState.lastError = null
     botState.updatedAt = new Date().toISOString()
@@ -715,6 +723,7 @@ app.listen(port, async () => {
 
     botState.pairingMethod = resolvedPairingMethod;
     botState.pairingPhoneNumber = resolvedPairingMethod === 'phone' && pairingPhoneNumber ? pairingPhoneNumber : null;
+    botState.connectedPhoneNumber = botState.pairingPhoneNumber;
     await startBot({
       appBaseUrl,
       authDir: process.env.AUTH_DIR || path.join(rootDir, '.wa-auth'),
@@ -729,7 +738,25 @@ app.listen(port, async () => {
       onPairingCode: (pairingCode: string, phoneNumber: string) => {
         botState.pairingMethod = 'phone';
         botState.pairingPhoneNumber = phoneNumber;
+        botState.connectedPhoneNumber = phoneNumber;
+        botState.displayName = botState.displayName || `WhatsApp ${phoneNumber}`;
         botState.pairingCode = pairingCode;
+        botState.updatedAt = new Date().toISOString();
+      },
+      onConnectedProfile: (profile: { displayName?: string | null; phoneNumber?: string | null; profileImageUrl?: string | null } | null) => {
+        const nextDisplayName = (profile?.displayName || '').trim();
+        const nextPhoneNumber = (profile?.phoneNumber || '').trim();
+        const nextImageUrl = (profile?.profileImageUrl || '').trim();
+        if (nextDisplayName) {
+          botState.displayName = nextDisplayName;
+        }
+        if (nextPhoneNumber) {
+          botState.connectedPhoneNumber = nextPhoneNumber;
+          botState.pairingPhoneNumber = botState.pairingPhoneNumber || nextPhoneNumber;
+        }
+        if (nextImageUrl) {
+          botState.profileImageUrl = nextImageUrl;
+        }
         botState.updatedAt = new Date().toISOString();
       },
       onStatus: (status: BotRuntimeState['status']) => {

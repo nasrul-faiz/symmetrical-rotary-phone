@@ -24,7 +24,7 @@ const pageConfig: Record<string, { title: string; description: string; icon: typ
     icon: CalendarClock,
   },
   "bot-delete-message": {
-    title: "Mesej Dipadam",
+    title: "Delete Massage",
     description: "Semak semula mesej, media, dan perbualan yang dipadam supaya anda boleh lihat kembali kandungannya.",
     icon: Trash2,
   },
@@ -33,20 +33,6 @@ const pageConfig: Record<string, { title: string; description: string; icon: typ
     description: "Manage WhatsApp contacts and related details.",
     icon: ContactRound,
   },
-}
-
-type DeletedMessage = {
-  id: string
-  chatJid: string
-  senderJid: string
-  fromMe: boolean
-  timestamp: string
-  deletedAt: string
-  text: string
-  mediaType: string | null
-  fileName: string | null
-  mimetype: string | null
-  mediaPath: string | null
 }
 
 function getMediaType(file: File): 'image' | 'video' | 'audio' | 'document' {
@@ -58,80 +44,6 @@ function getMediaType(file: File): 'image' | 'video' | 'audio' | 'document' {
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-}
-
-function getDeletedMediaPreviewUrl(message: DeletedMessage, token: string) {
-  if (!message.mediaPath) return null
-  return `${token ? `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}`}`
-}
-
-function getDeletedMediaLabel(message: DeletedMessage) {
-  if (!message.mediaType && !message.fileName) return 'Fail media'
-  if (message.mediaType === 'audio') return message.fileName ? message.fileName : 'Voice note'
-  if (message.mediaType === 'image') return message.fileName ? message.fileName : 'Image'
-  if (message.mediaType === 'video') return message.fileName ? message.fileName : 'Video'
-  return message.fileName ? message.fileName : 'Document'
-}
-
-function renderDeletedMedia(message: DeletedMessage, url: string | null) {
-  if (!url) {
-    return (
-      <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-        <Image className="size-4" />
-        {getDeletedMediaLabel(message)}
-      </p>
-    )
-  }
-
-  if (message.mediaType === 'image' || message.mediaType === 'sticker') {
-    return <img src={url} alt={getDeletedMediaLabel(message)} className="mt-3 max-h-80 rounded-md border" />
-  }
-
-  if (message.mediaType === 'video') {
-    return <video controls src={url} className="mt-3 max-h-80 rounded-md border" />
-  }
-
-  if (message.mediaType === 'audio') {
-    return (
-      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileAudio className="size-4 text-primary" />
-          <span>{getDeletedMediaLabel(message)}</span>
-        </div>
-        <audio controls src={url} className="w-full" />
-      </div>
-    )
-  }
-
-  const fileName = (message.fileName || '').toLowerCase()
-  const mimeType = (message.mimetype || '').toLowerCase()
-  const isPdf = mimeType.includes('pdf') || fileName.endsWith('.pdf')
-  const isTextLike = mimeType.startsWith('text/') || ['.txt', '.md', '.csv', '.json'].some((ext) => fileName.endsWith(ext))
-
-  if (isPdf || isTextLike || mimeType.includes('json') || mimeType.includes('xml')) {
-    return (
-      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="size-4 text-primary" />
-          <span>{getDeletedMediaLabel(message)}</span>
-        </div>
-        <iframe title={getDeletedMediaLabel(message)} src={url} className="h-72 w-full rounded-md border bg-white" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <FileText className="size-4 text-primary" />
-        <span>{getDeletedMediaLabel(message)}</span>
-      </div>
-      <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-        <FileText className="size-4" />
-        Buka fail
-      </a>
-    </div>
-  )
 }
 
 export function WhatsAppMessaging({ page }: WhatsAppMessagingProps) {
@@ -361,6 +273,276 @@ function SendChat() {
     </section>
     <aside className="rounded-lg border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground shadow-sm"><p className="font-medium text-foreground">Sasaran penghantaran</p><p className="mt-2">Personal menerima nombor dengan format antarabangsa, contohnya 60123456789.</p><p className="mt-3">Group memerlukan Group ID WhatsApp penuh yang berakhir dengan @g.us.</p><p className="mt-3">Untuk media, butang dihantar sebagai mesej interaktif selepas fail.</p></aside>
   </div>
+}
+
+type DeletedMessage = {
+  id: string
+  chatJid: string
+  senderJid: string
+  fromMe: boolean
+  timestamp: string
+  deletedAt: string
+  text: string
+  mediaType: string | null
+  fileName: string | null
+  mimetype: string | null
+  mediaPath: string | null
+}
+
+function getDeletedMediaPreviewUrl(message: DeletedMessage, token: string) {
+  if (!message.mediaPath) return null
+  return `${token ? `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/media/${encodeURIComponent(message.mediaPath)}`}`
+}
+
+function getDeletedMediaLabel(message: DeletedMessage) {
+  if (!message.mediaType && !message.fileName) return 'Fail media'
+  if (message.mediaType === 'audio') return message.fileName ? message.fileName : 'Voice note'
+  if (message.mediaType === 'image') return message.fileName ? message.fileName : 'Image'
+  if (message.mediaType === 'video') return message.fileName ? message.fileName : 'Video'
+  return message.fileName ? message.fileName : 'Document'
+}
+
+function renderDeletedMedia(message: DeletedMessage, url: string | null) {
+  if (!url) {
+    return (
+      <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <Image className="size-4" />
+        {getDeletedMediaLabel(message)}
+      </p>
+    )
+  }
+
+  if (message.mediaType === 'image' || message.mediaType === 'sticker') {
+    return <img src={url} alt={getDeletedMediaLabel(message)} className="mt-3 max-h-80 rounded-md border" />
+  }
+
+  if (message.mediaType === 'video') {
+    return <video controls src={url} className="mt-3 max-h-80 rounded-md border" />
+  }
+
+  if (message.mediaType === 'audio') {
+    return (
+      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileAudio className="size-4 text-primary" />
+          <span>{getDeletedMediaLabel(message)}</span>
+        </div>
+        <audio controls src={url} className="w-full" />
+      </div>
+    )
+  }
+
+  const fileName = (message.fileName || '').toLowerCase()
+  const mimeType = (message.mimetype || '').toLowerCase()
+  const isPdf = mimeType.includes('pdf') || fileName.endsWith('.pdf')
+  const isTextLike = mimeType.startsWith('text/') || ['.txt', '.md', '.csv', '.json'].some((ext) => fileName.endsWith(ext))
+
+  if (isPdf || isTextLike || mimeType.includes('json') || mimeType.includes('xml')) {
+    return (
+      <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="size-4 text-primary" />
+          <span>{getDeletedMediaLabel(message)}</span>
+        </div>
+        <iframe title={getDeletedMediaLabel(message)} src={url} className="h-72 w-full rounded-md border bg-white" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <FileText className="size-4 text-primary" />
+        <span>{getDeletedMediaLabel(message)}</span>
+      </div>
+      <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+        <FileText className="size-4" />
+        Buka fail
+      </a>
+    </div>
+  )
+}
+
+function DeletedMessages() {
+  const token = useDashboardToken()
+  const [messages, setMessages] = useState<DeletedMessage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actioning, setActioning] = useState<string | null>(null)
+  const [selectedChat, setSelectedChat] = useState<{ chatJid: string; title: string; messages: DeletedMessage[] } | null>(null)
+
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(token ? `/api/bot/deleted-messages?token=${encodeURIComponent(token)}` : '/api/bot/deleted-messages', { headers: token ? { 'x-bot-dashboard-token': token } : undefined })
+      const payload = await response.json()
+      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal ambil rekod mesej')
+      setMessages(payload.data)
+      setError(null)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Gagal ambil rekod mesej')
+    } finally {
+      setLoading(false)
+    }
+  }, [token])
+
+  const deleteChatMessages = useCallback(async (chatJid: string) => {
+    if (!chatJid) return
+    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam untuk chat ini?')
+    if (!confirmed) return
+
+    try {
+      setActioning(chatJid)
+      const response = await fetch(token ? `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}`, {
+        method: 'DELETE',
+        headers: token ? { 'x-bot-dashboard-token': token } : undefined,
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal padam rekod chat')
+      setMessages(payload.data)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Gagal padam rekod chat')
+    } finally {
+      setActioning(null)
+    }
+  }, [token])
+
+  const clearAllMessages = useCallback(async () => {
+    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam?')
+    if (!confirmed) return
+
+    try {
+      setActioning('all')
+      const response = await fetch(token ? `/api/bot/deleted-messages?token=${encodeURIComponent(token)}` : '/api/bot/deleted-messages', {
+        method: 'DELETE',
+        headers: token ? { 'x-bot-dashboard-token': token } : undefined,
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal padam semua rekod')
+      setMessages(payload.data)
+      setError(null)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Gagal padam semua rekod')
+    } finally {
+      setActioning(null)
+    }
+  }, [token])
+
+  useEffect(() => { void loadMessages() }, [loadMessages])
+
+  const mediaUrl = (message: DeletedMessage) => getDeletedMediaPreviewUrl(message, token)
+  const groupedMessages = useMemo(() => {
+    const grouped = new Map<string, DeletedMessage[]>()
+    for (const message of messages) {
+      const key = message.chatJid || 'unknown'
+      const list = grouped.get(key) ?? []
+      list.push(message)
+      grouped.set(key, list)
+    }
+
+    return Array.from(grouped.entries())
+      .map(([chatJid, chatMessages]) => {
+        const sorted = [...chatMessages].sort((a, b) => new Date(a.deletedAt).getTime() - new Date(b.deletedAt).getTime())
+        const newest = sorted[sorted.length - 1]
+        const title = chatJid.endsWith('@g.us') ? (chatMessages.find((message) => message.senderJid && !message.senderJid.endsWith('@g.us'))?.senderJid || chatJid) : (chatMessages[0]?.senderJid || chatJid)
+        const displayName = title === chatJid ? chatJid : title
+        const previewText = newest?.text || (newest?.mediaType ? `[${newest.mediaType}]` : '[No content]')
+        return { chatJid, title: displayName, previewText, messages: sorted }
+      })
+      .sort((a, b) => new Date(b.messages[b.messages.length - 1].deletedAt).getTime() - new Date(a.messages[a.messages.length - 1].deletedAt).getTime())
+  }, [messages])
+
+  const openChat = (chatJid: string) => {
+    const chat = groupedMessages.find((entry) => entry.chatJid === chatJid)
+    if (!chat) return
+    setSelectedChat({ chatJid: chat.chatJid, title: chat.title, messages: chat.messages })
+  }
+
+  const getInitials = (value: string) => {
+    const cleaned = value.replace(/[@.]/g, ' ').trim()
+    const parts = cleaned.split(/\s+/).filter(Boolean).slice(0, 2)
+    return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '?'
+  }
+
+  if (loading) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Memuatkan rekod...</div>
+  if (error) return <div className="rounded-lg border border-destructive/40 bg-card p-5 text-sm text-destructive">{error}</div>
+  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada mesej yang dipadam untuk dilihat semula buat masa ini.</div>
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button type="button" variant="destructive" size="sm" onClick={() => void clearAllMessages()} disabled={actioning !== null}>
+          {actioning === 'all' ? 'Memadam...' : 'Padam semua rekod'}
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {groupedMessages.map(({ chatJid, title, previewText, messages: chatMessages }) => (
+          <article key={chatJid} className="rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-colors hover:bg-accent/20">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  {getInitials(title)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">{title}</p>
+                  <p className="text-[11px] text-muted-foreground">{chatMessages.length} rekod mesej</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => openChat(chatJid)}>
+                  View
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => void deleteChatMessages(chatJid)} disabled={actioning !== null}>
+                  {actioning === chatJid ? 'Memadam...' : 'Padam rekod'}
+                </Button>
+              </div>
+            </div>
+
+            <p className="mt-3 truncate text-xs text-muted-foreground">
+              {previewText.length > 90 ? `${previewText.slice(0, 90)}...` : previewText}
+            </p>
+          </article>
+        ))}
+      </div>
+
+      <Dialog open={Boolean(selectedChat)} onOpenChange={(open) => { if (!open) setSelectedChat(null) }}>
+        <DialogContent className="max-w-3xl p-0">
+          <div className="rounded-2xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold">{selectedChat?.title ?? 'Deleted conversation'}</p>
+                <p className="text-[11px] text-muted-foreground">Mesej yang dipadam untuk perbualan ini boleh dilihat semula</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedChat(null)}>Tutup</Button>
+            </div>
+
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto bg-muted/20 p-4">
+              {selectedChat?.messages.map((message) => {
+                const url = mediaUrl(message)
+                const isOwn = message.fromMe
+
+                return (
+                  <div key={`${message.chatJid}-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl border p-3 shadow-sm ${isOwn ? 'border-primary/20 bg-primary/10 text-primary-foreground' : 'border-border bg-background text-foreground'}`}>
+                      <div className="mb-2 flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
+                        <span>{message.senderJid || 'Tidak diketahui'} {isOwn ? '(bot)' : ''}</span>
+                        <span>{formatDate(message.deletedAt)}</span>
+                      </div>
+
+                      {message.text ? <p className="whitespace-pre-wrap text-sm">{message.text}</p> : null}
+                      {renderDeletedMedia(message, url)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }
 
 type ContactCategory = "Customer" | "Supplier" | "Support" | "Other"
@@ -753,179 +935,4 @@ export function ContactManager({ initialContacts }: ContactManagerProps = {}) {
   )
 }
 
-function DeletedMessages() {
-  const token = useDashboardToken()
-  const [messages, setMessages] = useState<DeletedMessage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [actioning, setActioning] = useState<string | null>(null)
-  const [selectedChat, setSelectedChat] = useState<{ chatJid: string; title: string; messages: DeletedMessage[] } | null>(null)
 
-  const loadMessages = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(token ? `/api/bot/deleted-messages?token=${encodeURIComponent(token)}` : '/api/bot/deleted-messages', { headers: token ? { 'x-bot-dashboard-token': token } : undefined })
-      const payload = await response.json()
-      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal ambil rekod mesej')
-      setMessages(payload.data)
-      setError(null)
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Gagal ambil rekod mesej') } finally { setLoading(false) }
-  }, [token])
-
-  const deleteChatMessages = useCallback(async (chatJid: string) => {
-    if (!chatJid) return
-    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam untuk chat ini?')
-    if (!confirmed) return
-
-    try {
-      setActioning(chatJid)
-      const response = await fetch(token ? `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}`, {
-        method: 'DELETE',
-        headers: token ? { 'x-bot-dashboard-token': token } : undefined,
-      })
-      const payload = await response.json()
-      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal padam rekod chat')
-      setMessages(payload.data)
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Gagal padam rekod chat')
-    } finally {
-      setActioning(null)
-    }
-  }, [token])
-
-  const clearAllMessages = useCallback(async () => {
-    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam?')
-    if (!confirmed) return
-
-    try {
-      setActioning('all')
-      const response = await fetch(token ? `/api/bot/deleted-messages?token=${encodeURIComponent(token)}` : '/api/bot/deleted-messages', {
-        method: 'DELETE',
-        headers: token ? { 'x-bot-dashboard-token': token } : undefined,
-      })
-      const payload = await response.json()
-      if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal padam semua rekod')
-      setMessages(payload.data)
-      setError(null)
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Gagal padam semua rekod')
-    } finally {
-      setActioning(null)
-    }
-  }, [token])
-
-  useEffect(() => { void loadMessages() }, [loadMessages])
-  const mediaUrl = (message: DeletedMessage) => getDeletedMediaPreviewUrl(message, token)
-  const groupedMessages = useMemo(() => {
-    const grouped = new Map<string, DeletedMessage[]>()
-    for (const message of messages) {
-      const key = message.chatJid || 'unknown'
-      const list = grouped.get(key) ?? []
-      list.push(message)
-      grouped.set(key, list)
-    }
-
-    return Array.from(grouped.entries())
-      .map(([chatJid, chatMessages]) => {
-        const sorted = [...chatMessages].sort((a, b) => new Date(a.deletedAt).getTime() - new Date(b.deletedAt).getTime())
-        const newest = sorted[sorted.length - 1]
-        const title = chatJid.endsWith('@g.us') ? (chatMessages.find((message) => message.senderJid && !message.senderJid.endsWith('@g.us'))?.senderJid || chatJid) : (chatMessages[0]?.senderJid || chatJid)
-        const displayName = title === chatJid ? chatJid : title
-        const previewText = newest?.text || (newest?.mediaType ? `[${newest.mediaType}]` : '[No content]')
-        return { chatJid, title: displayName, previewText, messages: sorted }
-      })
-      .sort((a, b) => new Date(b.messages[b.messages.length - 1].deletedAt).getTime() - new Date(a.messages[a.messages.length - 1].deletedAt).getTime())
-  }, [messages])
-
-  const openChat = (chatJid: string) => {
-    const chat = groupedMessages.find((entry) => entry.chatJid === chatJid)
-    if (!chat) return
-    setSelectedChat({ chatJid: chat.chatJid, title: chat.title, messages: chat.messages })
-  }
-
-  const getInitials = (value: string) => {
-    const cleaned = value.replace(/[@.]/g, ' ').trim()
-    const parts = cleaned.split(/\s+/).filter(Boolean).slice(0, 2)
-    return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '?'
-  }
-
-  if (loading) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Memuatkan rekod...</div>
-  if (error) return <div className="rounded-lg border border-destructive/40 bg-card p-5 text-sm text-destructive">{error}</div>
-  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada mesej yang dipadam untuk dilihat semula buat masa ini.</div>
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button type="button" variant="destructive" size="sm" onClick={() => void clearAllMessages()} disabled={actioning !== null}>
-          {actioning === 'all' ? 'Memadam...' : 'Padam semua rekod'}
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {groupedMessages.map(({ chatJid, title, previewText, messages: chatMessages }) => (
-          <article key={chatJid} className="rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-colors hover:bg-accent/20">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {getInitials(title)}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{title}</p>
-                  <p className="text-[11px] text-muted-foreground">{chatMessages.length} rekod mesej</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => openChat(chatJid)}>
-                  View
-                </Button>
-                <Button type="button" size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => void deleteChatMessages(chatJid)} disabled={actioning !== null}>
-                  {actioning === chatJid ? 'Memadam...' : 'Padam rekod'}
-                </Button>
-              </div>
-            </div>
-
-            <p className="mt-3 truncate text-xs text-muted-foreground">
-              {previewText.length > 90 ? `${previewText.slice(0, 90)}...` : previewText}
-            </p>
-          </article>
-        ))}
-      </div>
-
-      <Dialog open={Boolean(selectedChat)} onOpenChange={(open) => { if (!open) setSelectedChat(null) }}>
-        <DialogContent className="max-w-3xl p-0">
-          <div className="rounded-2xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold">{selectedChat?.title ?? 'Deleted conversation'}</p>
-                <p className="text-[11px] text-muted-foreground">Mesej yang dipadam untuk perbualan ini boleh dilihat semula</p>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedChat(null)}>Tutup</Button>
-            </div>
-
-            <div className="max-h-[70vh] space-y-3 overflow-y-auto bg-muted/20 p-4">
-              {selectedChat?.messages.map((message) => {
-                const url = mediaUrl(message)
-                const isOwn = message.fromMe
-
-                return (
-                  <div key={`${message.chatJid}-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl border p-3 shadow-sm ${isOwn ? 'border-primary/20 bg-primary/10 text-primary-foreground' : 'border-border bg-background text-foreground'}`}>
-                      <div className="mb-2 flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
-                        <span>{message.senderJid || 'Tidak diketahui'} {isOwn ? '(bot)' : ''}</span>
-                        <span>{formatDate(message.deletedAt)}</span>
-                      </div>
-
-                      {message.text ? <p className="whitespace-pre-wrap text-sm">{message.text}</p> : null}
-                      {renderDeletedMedia(message, url)}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}

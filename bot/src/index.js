@@ -3320,6 +3320,28 @@ Contoh: ${commandPrefix}wlink 60177501997`;
   return buildCommandNotFoundReply(commandPrefix, appBaseUrl);
 }
 
+async function resolveConnectedProfile(sock) {
+  const user = sock?.user || {};
+  const phoneNumber = normalizePhoneNumber(user?.id || user?.jid || user?.phoneNumber || '');
+  const fallbackDisplayName = phoneNumber ? `WhatsApp ${phoneNumber}` : 'WhatsApp Account';
+  const displayName = String(user?.name || user?.verifiedName || user?.notify || fallbackDisplayName).trim() || fallbackDisplayName;
+
+  let profileImageUrl = null;
+  if (sock && typeof sock.profilePictureUrl === 'function' && user?.id) {
+    try {
+      profileImageUrl = await sock.profilePictureUrl(user.id, 'image');
+    } catch (error) {
+      console.warn('Failed to load WhatsApp profile picture:', error?.message || error);
+    }
+  }
+
+  return {
+    displayName,
+    phoneNumber,
+    profileImageUrl: profileImageUrl || null,
+  };
+}
+
 export async function startBot(overrides = {}) {
   if (activeBotSocket) {
     return activeBotSocket;
@@ -3333,6 +3355,7 @@ export async function startBot(overrides = {}) {
   const onQr = typeof overrides.onQr === 'function' ? overrides.onQr : null;
   const onStatus = typeof overrides.onStatus === 'function' ? overrides.onStatus : null;
   const onPairingCode = typeof overrides.onPairingCode === 'function' ? overrides.onPairingCode : null;
+  const onConnectedProfile = typeof overrides.onConnectedProfile === 'function' ? overrides.onConnectedProfile : null;
   const persistedMessageBehavior = getMessageBehaviorSettings();
   const resolvedAllowedNumbers = String(
     overrides.allowedNumbers ?? persistedMessageBehavior.allowedNumbers ?? process.env.ALLOWED_NUMBERS ?? ''
@@ -3427,6 +3450,14 @@ export async function startBot(overrides = {}) {
 
     if (connection === 'open') {
       onStatus?.('connected');
+      void (async () => {
+        try {
+          const profile = await resolveConnectedProfile(sock);
+          onConnectedProfile?.(profile);
+        } catch (error) {
+          console.warn('Failed to resolve connected WhatsApp profile:', error?.message || error);
+        }
+      })();
       console.log('WhatsApp bot connected.');
       startPrayerReminderLoop();
     }
