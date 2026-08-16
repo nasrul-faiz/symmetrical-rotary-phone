@@ -527,7 +527,7 @@ function DeletedMessages() {
                   <div key={`${message.chatJid}-${message.id}`} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl border p-3 shadow-sm ${isOwn ? 'border-primary/20 bg-primary/10 text-primary-foreground' : 'border-border bg-background text-foreground'}`}>
                       <div className="mb-2 flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
-                        <span>{message.senderJid || 'Tidak diketahui'} {isOwn ? '(bot)' : ''}</span>
+                        <span>{message.senderJid || 'Pengirim tidak dikenali'} {isOwn ? '(bot)' : ''}</span>
                         <span>{formatDate(message.deletedAt)}</span>
                       </div>
 

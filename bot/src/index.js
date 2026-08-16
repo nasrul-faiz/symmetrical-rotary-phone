@@ -482,7 +482,7 @@ function normalizeDeletedMessageKey(rawKey = {}) {
   return { remoteJid, id };
 }
 
-export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipadamkan.') {
+export function recordDeletedMessage(key = {}, fallbackText = 'Mesej dipadam.') {
   const normalized = normalizeDeletedMessageKey(key);
   if (!normalized) return false;
 
@@ -512,7 +512,7 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipad
   const logs = loadDeletedMessageLogs();
   if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return false;
 
-  const preservedText = String(captured?.text || '').trim() || String(fallbackText || '').trim() || 'Pesan dipadam untuk semua';
+  const preservedText = String(captured?.text || '').trim() || String(fallbackText || '').trim() || 'Mesej dipadam.';
   logs.unshift({
     ...captured,
     id: messageId,
@@ -3864,11 +3864,11 @@ export async function startBot(overrides = {}) {
     for (const update of updates) {
       const protocolMessage = update?.update?.message?.protocolMessage;
       if (protocolMessage?.key) {
-        recordDeletedMessage({ ...protocolMessage, key: protocolMessage.key, message: update?.update?.message }, 'Pesan dipadam untuk semua');
+        recordDeletedMessage({ ...protocolMessage, key: protocolMessage.key, message: update?.update?.message }, 'Mesej dipadam.');
       }
       const messageStubType = update?.update?.message?.messageStubType;
       if (messageStubType && update?.key) {
-        recordDeletedMessage({ ...update, key: update.key, message: update?.message || update?.update?.message }, 'Pesan dipadam untuk semua');
+        recordDeletedMessage({ ...update, key: update.key, message: update?.message || update?.update?.message }, 'Mesej dipadam.');
       }
     }
   });
@@ -3879,9 +3879,9 @@ export async function startBot(overrides = {}) {
       const deleteKeys = Array.isArray(deleteEvent?.keys) ? deleteEvent.keys : [deleteEvent];
       for (const item of deleteKeys) {
         if (item?.key) {
-          recordDeletedMessage({ ...item, key: item.key, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Pesan dipadam untuk semua');
+          recordDeletedMessage({ ...item, key: item.key, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Mesej dipadam.');
         } else {
-          recordDeletedMessage({ ...item, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Pesan dipadam untuk semua');
+          recordDeletedMessage({ ...item, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Mesej dipadam.');
         }
       }
     }

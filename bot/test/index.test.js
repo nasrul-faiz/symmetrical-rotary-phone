@@ -197,11 +197,11 @@ test('records deleted messages even when the original record is not cached', () 
   const recorded = recordDeletedMessage({
     remoteJid: '60123456789@s.whatsapp.net',
     id: 'deleted-for-everyone-1',
-  }, 'Pesan dipadam untuk semua');
+  }, 'Mesej dipadam.');
 
   assert.equal(recorded, true);
   assert.equal(getDeletedMessageLogs().length, 1);
-  assert.equal(getDeletedMessageLogs()[0].text, 'Pesan dipadam untuk semua');
+  assert.equal(getDeletedMessageLogs()[0].text, 'Mesej dipadam.');
 
   clearDeletedMessageLogs();
 });
@@ -246,7 +246,7 @@ test('records deleted message content when the delete payload includes the origi
       conversation: 'this content must be preserved',
     },
     messageTimestamp: Math.floor(Date.now() / 1000),
-  }, 'Pesan dipadam untuk semua');
+  }, 'Mesej dipadam.');
 
   assert.equal(recorded, true);
   assert.equal(getDeletedMessageLogs().length, 1);
@@ -271,7 +271,7 @@ test('records delete-for-everyone payloads that arrive in nested Baileys protoco
         },
       },
     },
-  }, 'Pesan dipadam untuk semua');
+  }, 'Mesej dipadam.');
 
   assert.equal(recorded, true);
   assert.equal(getDeletedMessageLogs().length, 1);
