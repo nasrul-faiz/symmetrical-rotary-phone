@@ -24,8 +24,8 @@ const pageConfig: Record<string, { title: string; description: string; icon: typ
     icon: CalendarClock,
   },
   "bot-delete-message": {
-    title: "Deleted Messages",
-    description: "Rekod mesej yang dipadam untuk semua orang.",
+    title: "Paparan Mesej Yang Dipadam",
+    description: "Rekod semua mesej, media, dan perbualan yang dipadam supaya anda boleh semak semula dengan mudah.",
     icon: Trash2,
   },
   "bot-contact": {
@@ -851,13 +851,13 @@ function DeletedMessages() {
 
   if (loading) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Memuatkan rekod...</div>
   if (error) return <div className="rounded-lg border border-destructive/40 bg-card p-5 text-sm text-destructive">{error}</div>
-  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Belum ada mesej yang dipadam direkodkan.</div>
+  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada rekod mesej yang dipadam buat masa ini.</div>
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button type="button" variant="destructive" size="sm" onClick={() => void clearAllMessages()} disabled={actioning !== null}>
-          {actioning === 'all' ? 'Memadam...' : 'Padam semua'}
+          {actioning === 'all' ? 'Memadam...' : 'Padam semua rekod'}
         </Button>
       </div>
 
@@ -880,7 +880,7 @@ function DeletedMessages() {
                   View
                 </Button>
                 <Button type="button" size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => void deleteChatMessages(chatJid)} disabled={actioning !== null}>
-                  {actioning === chatJid ? 'Memadam...' : 'Delete'}
+                  {actioning === chatJid ? 'Memadam...' : 'Padam rekod'}
                 </Button>
               </div>
             </div>
@@ -898,7 +898,7 @@ function DeletedMessages() {
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
                 <p className="text-sm font-semibold">{selectedChat?.title ?? 'Deleted conversation'}</p>
-                <p className="text-[11px] text-muted-foreground">Showing deleted message records</p>
+                <p className="text-[11px] text-muted-foreground">Rekod mesej yang dipadam untuk perbualan ini</p>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={() => setSelectedChat(null)}>Tutup</Button>
             </div>

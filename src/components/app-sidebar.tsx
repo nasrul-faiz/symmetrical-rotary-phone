@@ -135,14 +135,14 @@ const botNavGroups: NavGroup[] = [
       { title: "Account",   url: "#", icon: LayoutDashboard, page: "bot-dashboard",        color: "hsl(158 46% 52%)" },
       { title: "Reminder",  url: "#", icon: BellRing,       page: "bot-reminder",         color: "hsl(27 78% 56%)" },
       {
-        title: "Massage",
+        title: "Messages",
         url: "#",
         icon: MessageCircle,
         color: "hsl(332 70% 62%)",
         items: [
           { title: "Send Chat", url: "#", page: "bot-send-chat" },
           { title: "Schedule Chat", url: "#", page: "bot-schedule-chat" },
-          { title: "Delete Massage", url: "#", page: "bot-delete-message" },
+          { title: "Paparan Mesej Yang Dipadam", url: "#", page: "bot-delete-message" },
           { title: "Contact", url: "#", page: "bot-contact" },
         ],
       },
