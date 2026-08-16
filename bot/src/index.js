@@ -482,6 +482,63 @@ function normalizeDeletedMessageKey(rawKey = {}) {
   return { remoteJid, id };
 }
 
+export function extractDeletionCandidates(rawPayload = {}) {
+  const queue = [rawPayload];
+  const seen = new Set();
+  const candidates = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object' || seen.has(current)) continue;
+    seen.add(current);
+
+    const hasDeletionSignal = Boolean(
+      current?.key ||
+      current?.id ||
+      current?.remoteJid ||
+      current?.participant ||
+      current?.messageStubType ||
+      current?.protocolMessage ||
+      current?.message?.protocolMessage ||
+      current?.message?.messageStubType ||
+      current?.update?.message?.protocolMessage ||
+      current?.update?.message?.messageStubType ||
+      current?.data?.protocolMessage ||
+      current?.data?.message?.protocolMessage
+    );
+
+    if (hasDeletionSignal) {
+      candidates.push(current);
+    }
+
+    for (const child of [
+      current?.key,
+      current?.message,
+      current?.update,
+      current?.data,
+      current?.protocolMessage,
+      current?.message?.protocolMessage,
+      current?.message?.key,
+      current?.update?.key,
+      current?.update?.message,
+      current?.update?.protocolMessage,
+      current?.update?.message?.key,
+      current?.update?.message?.protocolMessage,
+      current?.data?.message,
+      current?.data?.protocolMessage,
+      current?.data?.key,
+      current?.message?.protocolMessage?.key,
+      current?.update?.message?.protocolMessage?.key,
+    ]) {
+      if (child && typeof child === 'object' && !seen.has(child)) {
+        queue.push(child);
+      }
+    }
+  }
+
+  return candidates;
+}
+
 export function recordDeletedMessage(key = {}, fallbackText = 'Mesej dipadam.') {
   const normalized = normalizeDeletedMessageKey(key);
   if (!normalized) return false;
@@ -3861,14 +3918,14 @@ export async function startBot(overrides = {}) {
   });
 
   sock.ev.on('messages.update', (updates = []) => {
-    for (const update of updates) {
-      const protocolMessage = update?.update?.message?.protocolMessage;
-      if (protocolMessage?.key) {
-        recordDeletedMessage({ ...protocolMessage, key: protocolMessage.key, message: update?.update?.message }, 'Mesej dipadam.');
-      }
-      const messageStubType = update?.update?.message?.messageStubType;
-      if (messageStubType && update?.key) {
-        recordDeletedMessage({ ...update, key: update.key, message: update?.message || update?.update?.message }, 'Mesej dipadam.');
+    const entries = Array.isArray(updates) ? updates : [updates];
+    for (const update of entries) {
+      for (const candidate of extractDeletionCandidates(update)) {
+        const protocolMessage = candidate?.update?.message?.protocolMessage || candidate?.message?.protocolMessage || candidate?.protocolMessage || candidate?.data?.protocolMessage || null;
+        const messageStubType = candidate?.update?.message?.messageStubType ?? candidate?.message?.messageStubType ?? candidate?.messageStubType ?? null;
+        if (protocolMessage || messageStubType !== null) {
+          recordDeletedMessage(candidate, 'Mesej dipadam.');
+        }
       }
     }
   });
@@ -3878,10 +3935,21 @@ export async function startBot(overrides = {}) {
     for (const deleteEvent of normalizedDeleteEvents) {
       const deleteKeys = Array.isArray(deleteEvent?.keys) ? deleteEvent.keys : [deleteEvent];
       for (const item of deleteKeys) {
-        if (item?.key) {
-          recordDeletedMessage({ ...item, key: item.key, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Mesej dipadam.');
-        } else {
-          recordDeletedMessage({ ...item, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Mesej dipadam.');
+        for (const candidate of extractDeletionCandidates(item ?? deleteEvent)) {
+          const hasDeletionSignal = Boolean(
+            candidate?.key ||
+            candidate?.id ||
+            candidate?.remoteJid ||
+            candidate?.participant ||
+            candidate?.protocolMessage ||
+            candidate?.message?.protocolMessage ||
+            candidate?.update?.message?.protocolMessage ||
+            candidate?.message?.messageStubType ||
+            candidate?.update?.message?.messageStubType
+          );
+          if (hasDeletionSignal) {
+            recordDeletedMessage(candidate, 'Mesej dipadam.');
+          }
         }
       }
     }

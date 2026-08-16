@@ -19,6 +19,7 @@ import {
   clearDeletedMessageLogs,
   createAuthStatePersistenceController,
   executeCommand,
+  extractDeletionCandidates,
   getBotMessageBehaviorSettings,
   getDeletedMessageLogs,
   isAllowedGroup,
@@ -278,6 +279,41 @@ test('records delete-for-everyone payloads that arrive in nested Baileys protoco
   assert.equal(getDeletedMessageLogs()[0].id, 'revoked-message-1');
   assert.equal(getDeletedMessageLogs()[0].chatJid, '60123456789@s.whatsapp.net');
 
+  clearDeletedMessageLogs();
+});
+
+test('extracts nested revoke payloads when the message key sits inside update.message instead of the top-level update object', () => {
+  const candidates = extractDeletionCandidates({
+    update: {
+      message: {
+        messageStubType: 7,
+        key: {
+          id: 'revoked-message-nested-1',
+          remoteJid: '60123456789@s.whatsapp.net',
+          fromMe: false,
+        },
+      },
+    },
+  });
+
+  assert.ok(candidates.some((candidate) => String(candidate?.key?.id || candidate?.id || '').includes('revoked-message-nested-1')));
+
+  clearDeletedMessageLogs();
+  const recorded = recordDeletedMessage({
+    update: {
+      message: {
+        messageStubType: 7,
+        key: {
+          id: 'revoked-message-nested-1',
+          remoteJid: '60123456789@s.whatsapp.net',
+          fromMe: false,
+        },
+      },
+    },
+  }, 'Mesej dipadam.');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs()[0].id, 'revoked-message-nested-1');
   clearDeletedMessageLogs();
 });
 
