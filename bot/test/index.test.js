@@ -233,6 +233,28 @@ test('captures incoming message content before delete and preserves it in the de
   clearDeletedMessageLogs();
 });
 
+test('records deleted message content when the delete payload includes the original message object', () => {
+  clearDeletedMessageLogs();
+
+  const recorded = recordDeletedMessage({
+    key: {
+      id: 'delete-with-message-object-1',
+      remoteJid: '60123456789@s.whatsapp.net',
+      fromMe: false,
+    },
+    message: {
+      conversation: 'this content must be preserved',
+    },
+    messageTimestamp: Math.floor(Date.now() / 1000),
+  }, 'Pesan dipadam untuk semua');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs().length, 1);
+  assert.equal(getDeletedMessageLogs()[0].text, 'this content must be preserved');
+
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });

@@ -389,6 +389,27 @@ export async function captureMessageForAudit(msg) {
   }
 }
 
+function buildDeletedMessageCapturePayload(rawPayload = {}) {
+  const normalizedKey = rawPayload?.key || rawPayload || {};
+  const message = rawPayload?.message || rawPayload?.update?.message || rawPayload?.data?.message || null;
+  const key = {
+    id: normalizedKey?.id || rawPayload?.id || '',
+    remoteJid: normalizedKey?.remoteJid || rawPayload?.remoteJid || '',
+    fromMe: Boolean(normalizedKey?.fromMe ?? rawPayload?.fromMe),
+    participant: normalizedKey?.participant || rawPayload?.participant || '',
+    participantPn: normalizedKey?.participantPn || rawPayload?.participantPn || '',
+    remoteJidPn: normalizedKey?.remoteJidPn || rawPayload?.remoteJidPn || '',
+  };
+
+  if (!key.id || !key.remoteJid || !message) return null;
+
+  return {
+    key,
+    message,
+    messageTimestamp: Number(rawPayload?.messageTimestamp || rawPayload?.timestamp || Date.now() / 1000),
+  };
+}
+
 function normalizeDeletedMessageKey(rawKey = {}) {
   const key = rawKey?.key || rawKey || {};
   const remoteJid = String(key.remoteJid || rawKey?.remoteJid || '').trim();
@@ -402,6 +423,12 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipad
   if (!normalized) return false;
 
   const { remoteJid: chatJid, id: messageId } = normalized;
+
+  const directPayload = buildDeletedMessageCapturePayload(key);
+  if (directPayload) {
+    void captureMessageForAudit(directPayload);
+  }
+
   const captured = capturedMessages.get(`${chatJid}|${messageId}`) || {
     id: messageId,
     chatJid,
@@ -3729,11 +3756,11 @@ export async function startBot(overrides = {}) {
     for (const update of updates) {
       const protocolMessage = update?.update?.message?.protocolMessage;
       if (protocolMessage?.key) {
-        recordDeletedMessage(protocolMessage.key, 'Pesan dipadam untuk semua');
+        recordDeletedMessage({ ...protocolMessage, key: protocolMessage.key, message: update?.update?.message }, 'Pesan dipadam untuk semua');
       }
       const messageStubType = update?.update?.message?.messageStubType;
       if (messageStubType && update?.key) {
-        recordDeletedMessage(update.key, 'Pesan dipadam untuk semua');
+        recordDeletedMessage({ ...update, key: update.key, message: update?.message || update?.update?.message }, 'Pesan dipadam untuk semua');
       }
     }
   });
@@ -3744,9 +3771,9 @@ export async function startBot(overrides = {}) {
       const deleteKeys = Array.isArray(deleteEvent?.keys) ? deleteEvent.keys : [deleteEvent];
       for (const item of deleteKeys) {
         if (item?.key) {
-          recordDeletedMessage(item.key, 'Pesan dipadam untuk semua');
+          recordDeletedMessage({ ...item, key: item.key, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Pesan dipadam untuk semua');
         } else {
-          recordDeletedMessage(item, 'Pesan dipadam untuk semua');
+          recordDeletedMessage({ ...item, message: item.message || deleteEvent?.message || deleteEvent?.update?.message }, 'Pesan dipadam untuk semua');
         }
       }
     }
