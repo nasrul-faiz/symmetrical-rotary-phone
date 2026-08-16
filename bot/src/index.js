@@ -411,11 +411,73 @@ function buildDeletedMessageCapturePayload(rawPayload = {}) {
   };
 }
 
+function findCapturedMessageById(messageId = '') {
+  const targetId = String(messageId || '').trim();
+  if (!targetId) return null;
+
+  for (const entry of capturedMessages.values()) {
+    if (String(entry?.id || '').trim() === targetId) {
+      return entry;
+    }
+  }
+
+  return null;
+}
+
+function inferDeletedMessageSender(rawKey = {}) {
+  const candidates = [
+    rawKey?.key,
+    rawKey?.message?.key,
+    rawKey?.update?.key,
+    rawKey?.update?.message?.key,
+    rawKey?.update?.message?.protocolMessage?.key,
+    rawKey?.message?.protocolMessage?.key,
+    rawKey?.protocolMessage?.key,
+    rawKey?.data?.key,
+    rawKey?.data?.message?.key,
+    rawKey?.data?.protocolMessage?.key,
+    rawKey,
+  ].filter(Boolean);
+
+  const selected = candidates.find((candidate) => candidate && (candidate.participant || candidate.participantPn || candidate.senderJid || candidate.fromMe !== undefined)) || rawKey || {};
+  return String(selected.participant || selected.participantPn || selected.senderJid || '').trim();
+}
+
 function normalizeDeletedMessageKey(rawKey = {}) {
-  const protocolMessage = rawKey?.update?.message?.protocolMessage || rawKey?.message?.protocolMessage || rawKey?.protocolMessage || rawKey?.data?.protocolMessage || null;
-  const nestedKey = protocolMessage?.key || rawKey?.key || rawKey || {};
-  const remoteJid = String(nestedKey.remoteJid || rawKey?.remoteJid || protocolMessage?.remoteJid || '').trim();
-  const id = String(nestedKey.id || rawKey?.id || protocolMessage?.id || '').trim();
+  const candidates = [
+    rawKey?.key,
+    rawKey?.message?.key,
+    rawKey?.update?.key,
+    rawKey?.update?.message?.key,
+    rawKey?.update?.message?.protocolMessage?.key,
+    rawKey?.message?.protocolMessage?.key,
+    rawKey?.protocolMessage?.key,
+    rawKey?.data?.key,
+    rawKey?.data?.message?.key,
+    rawKey?.data?.protocolMessage?.key,
+    rawKey,
+  ].filter(Boolean);
+
+  const selected = candidates.find((candidate) => candidate && (candidate.remoteJid || candidate.id)) || rawKey || {};
+  const remoteJid = String(selected.remoteJid || rawKey?.remoteJid || selected?.remoteJid || '').trim();
+  const id = String(selected.id || rawKey?.id || '').trim();
+
+  if (!id && !remoteJid) return null;
+
+  if (!remoteJid && id) {
+    const captured = findCapturedMessageById(id);
+    if (captured?.chatJid) {
+      return { remoteJid: captured.chatJid, id };
+    }
+  }
+
+  if (!id && remoteJid) {
+    const captured = [...capturedMessages.values()].find((entry) => String(entry?.chatJid || '').trim() === remoteJid);
+    if (captured?.id) {
+      return { remoteJid, id: String(captured.id) };
+    }
+  }
+
   if (!remoteJid || !id) return null;
   return { remoteJid, id };
 }
@@ -431,7 +493,8 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipad
     void captureMessageForAudit(directPayload);
   }
 
-  const captured = capturedMessages.get(`${chatJid}|${messageId}`) || {
+  const capturedById = findCapturedMessageById(messageId);
+  const captured = capturedMessages.get(`${chatJid}|${messageId}`) || capturedById || {
     id: messageId,
     chatJid,
     senderJid: null,
@@ -444,10 +507,22 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Pesan telah dipad
     mediaPath: null,
   };
 
+  const senderJid = captured?.senderJid || inferDeletedMessageSender(key) || null;
+
   const logs = loadDeletedMessageLogs();
   if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return false;
 
-  logs.unshift({ ...captured, deletedAt: new Date().toISOString() });
+  const preservedText = String(captured?.text || '').trim() || String(fallbackText || '').trim() || 'Pesan dipadam untuk semua';
+  logs.unshift({
+    ...captured,
+    id: messageId,
+    chatJid,
+    senderJid,
+    fromMe: Boolean(captured?.fromMe ?? false),
+    timestamp: captured?.timestamp || new Date().toISOString(),
+    deletedAt: new Date().toISOString(),
+    text: preservedText,
+  });
   deletedMessageLogs = logs.slice(0, MAX_DELETED_MESSAGE_LOGS);
   saveDeletedMessageLogs();
   return true;
