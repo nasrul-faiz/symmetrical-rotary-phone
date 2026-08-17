@@ -1,0 +1,50 @@
+[
+  {
+    "id": "incoming-delete-1",
+    "chatJid": "60123456789@s.whatsapp.net",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "fromMe": false,
+    "timestamp": "2026-08-16T18:53:47.000Z",
+    "text": "hello from captured message",
+    "mediaType": null,
+    "fileName": null,
+    "mimetype": null,
+    "mediaPath": null
+  },
+  {
+    "id": "delete-with-message-object-1",
+    "chatJid": "60123456789@s.whatsapp.net",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "fromMe": false,
+    "timestamp": "2026-08-16T18:53:47.000Z",
+    "text": "this content must be preserved",
+    "mediaType": null,
+    "fileName": null,
+    "mimetype": null,
+    "mediaPath": null
+  },
+  {
+    "id": "revoked-message-1",
+    "chatJid": "60123456789@s.whatsapp.net",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "fromMe": false,
+    "timestamp": "2026-08-16T18:53:47.512Z",
+    "text": "",
+    "mediaType": null,
+    "fileName": null,
+    "mimetype": null,
+    "mediaPath": null
+  },
+  {
+    "id": "protocol-revoke-1",
+    "chatJid": "60123456789@s.whatsapp.net",
+    "senderJid": "60123456789@s.whatsapp.net",
+    "fromMe": false,
+    "timestamp": "2026-08-16T18:53:47.000Z",
+    "text": "",
+    "mediaType": null,
+    "fileName": null,
+    "mimetype": null,
+    "mediaPath": null
+  }
+]

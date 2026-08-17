@@ -22,6 +22,7 @@ import {
   extractDeletionCandidates,
   getBotMessageBehaviorSettings,
   getDeletedMessageLogs,
+  hydrateCapturedMessageCache,
   isAllowedGroup,
   normalizeButtonPayload,
   normalizeGroupAllowlist,
@@ -205,6 +206,41 @@ test('records deleted messages even when the original record is not cached', () 
   assert.equal(getDeletedMessageLogs()[0].text, 'Mesej dipadam.');
 
   clearDeletedMessageLogs();
+});
+
+test('restores persisted deleted-message content after a bot restart', () => {
+  clearDeletedMessageLogs();
+
+  const cachePath = path.join(botRootDir, '.bot-captured-message-cache.json');
+  const originalText = 'mesej asal yang disimpan semula lepas restart';
+  fs.writeFileSync(cachePath, JSON.stringify([
+    {
+      id: 'disk-restored-message-1',
+      chatJid: '60123456789@s.whatsapp.net',
+      senderJid: '60123456789@s.whatsapp.net',
+      fromMe: false,
+      timestamp: '2024-05-01T01:00:00.000Z',
+      text: originalText,
+      mediaType: null,
+      fileName: null,
+      mimetype: null,
+      mediaPath: null,
+    },
+  ], null, 2), 'utf8');
+
+  assert.equal(hydrateCapturedMessageCache(), 1);
+
+  const recorded = recordDeletedMessage({
+    remoteJid: '60123456789@s.whatsapp.net',
+    id: 'disk-restored-message-1',
+  }, 'Mesej dipadam.');
+
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs()[0].text, originalText);
+
+  clearDeletedMessageLogs();
+  fs.writeFileSync(cachePath, JSON.stringify([], null, 2), 'utf8');
+  hydrateCapturedMessageCache();
 });
 
 test('captures incoming message content before delete and preserves it in the deleted log', async () => {

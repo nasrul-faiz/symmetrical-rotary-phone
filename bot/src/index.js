@@ -253,9 +253,11 @@ const DEFAULT_TIMEZONE = String(process.env.BOT_TIMEZONE || 'Asia/Kuala_Lumpur')
 const BOT_SETTINGS_PATH = path.join(botDir, '.bot-settings.json');
 const BOT_CONTACTS_FILE = path.resolve(process.env.BOT_CONTACTS_FILE || path.join(botDir, '.contacts.json'));
 const DELETED_MESSAGE_LOG_PATH = path.join(botDir, '.bot-deleted-messages.json');
+const CAPTURED_MESSAGE_CACHE_PATH = path.join(botDir, '.bot-captured-message-cache.json');
 const BOT_CONTACTS_TABLE = 'bot_contacts';
 const DELETED_MESSAGE_MEDIA_DIR = path.join(botDir, '.deleted-message-media');
 const MAX_DELETED_MESSAGE_LOGS = 250;
+const MAX_CAPTURED_MESSAGE_CACHE_ENTRIES = 1000;
 const DEFAULT_PRAYER_CITY = String(process.env.BOT_PRAYER_CITY || 'Kuala Lumpur').trim() || 'Kuala Lumpur';
 const DEFAULT_PRAYER_COUNTRY = String(process.env.BOT_PRAYER_COUNTRY || 'Malaysia').trim() || 'Malaysia';
 const DEFAULT_PRAYER_METHOD = String(process.env.BOT_PRAYER_METHOD || '3').trim() || '3';
@@ -309,6 +311,46 @@ let botRuntimeLockPath = '';
 const capturedMessages = new Map();
 let deletedMessageLogs = null;
 
+export function loadCapturedMessageCache() {
+  try {
+    const stored = JSON.parse(fs.readFileSync(CAPTURED_MESSAGE_CACHE_PATH, 'utf8'));
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+}
+
+export function hydrateCapturedMessageCache() {
+  const nextEntries = loadCapturedMessageCache();
+  capturedMessages.clear();
+
+  for (const entry of nextEntries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const messageId = String(entry?.id || '').trim();
+    const chatJid = String(entry?.chatJid || '').trim();
+    if (!messageId || !chatJid) continue;
+    capturedMessages.set(`${chatJid}|${messageId}`, {
+      id: messageId,
+      chatJid,
+      senderJid: String(entry?.senderJid || '').trim() || null,
+      fromMe: Boolean(entry?.fromMe),
+      timestamp: entry?.timestamp || new Date().toISOString(),
+      text: String(entry?.text || '').trim(),
+      mediaType: entry?.mediaType || null,
+      fileName: entry?.fileName || null,
+      mimetype: entry?.mimetype || null,
+      mediaPath: entry?.mediaPath || null,
+    });
+  }
+
+  return capturedMessages.size;
+}
+
+function saveCapturedMessageCache() {
+  const entries = Array.from(capturedMessages.values()).slice(-MAX_CAPTURED_MESSAGE_CACHE_ENTRIES);
+  fs.writeFileSync(CAPTURED_MESSAGE_CACHE_PATH, JSON.stringify(entries, null, 2), 'utf8');
+}
+
 function loadDeletedMessageLogs() {
   if (deletedMessageLogs) return deletedMessageLogs;
   try {
@@ -323,6 +365,8 @@ function loadDeletedMessageLogs() {
 function saveDeletedMessageLogs() {
   fs.writeFileSync(DELETED_MESSAGE_LOG_PATH, JSON.stringify(loadDeletedMessageLogs(), null, 2), 'utf8');
 }
+
+hydrateCapturedMessageCache();
 
 function getAuditMessageMedia(message = {}) {
   const mediaTypes = [
@@ -384,9 +428,10 @@ export async function captureMessageForAudit(msg) {
     }
   }
   capturedMessages.set(`${chatJid}|${messageId}`, entry);
-  if (capturedMessages.size > 1000) {
+  if (capturedMessages.size > MAX_CAPTURED_MESSAGE_CACHE_ENTRIES) {
     capturedMessages.delete(capturedMessages.keys().next().value);
   }
+  saveCapturedMessageCache();
 }
 
 function buildDeletedMessageCapturePayload(rawPayload = {}) {
@@ -3031,14 +3076,18 @@ Contoh: ${commandPrefix}wlink 60177501997`;
   }
 
   const isExplicitContactCommand = command === 'contact' || command === 'c';
-  const isShortContactLookup = command.length > 1 && command.startsWith('c') && command !== 'csv';
+  const isShortContactLookup = command.length > 1 && command.startsWith('c') && command !== 'contact' && command !== 'csv';
 
   if (isExplicitContactCommand || isShortContactLookup) {
-    const baseQuery = command === 'contact' ? (arg || '') : command.slice(1) || arg || '';
+    const baseQuery = command === 'contact' ? (arg || '') : command.startsWith('c') ? command.slice(1) || arg || '' : arg || '';
     const lookupQuery = (baseQuery || arg || command).trim();
     const matches = findBotContactMatches(lookupQuery || command);
 
-    if (!(isShortContactLookup && matches.length === 0)) {
+    if (isExplicitContactCommand) {
+      return buildContactSearchReply(lookupQuery || command, matches);
+    }
+
+    if (isShortContactLookup && matches.length > 0) {
       return buildContactSearchReply(lookupQuery || command, matches);
     }
   }
