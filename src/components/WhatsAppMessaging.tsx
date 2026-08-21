@@ -446,7 +446,9 @@ function DeletedMessages() {
       .map(([chatJid, chatMessages]) => {
         const sorted = [...chatMessages].sort((a, b) => new Date(a.deletedAt).getTime() - new Date(b.deletedAt).getTime())
         const newest = sorted[sorted.length - 1]
-        const title = chatJid.endsWith('@g.us') ? (chatMessages.find((message) => message.senderJid && !message.senderJid.endsWith('@g.us'))?.senderJid || chatJid) : (chatMessages[0]?.senderJid || chatJid)
+        const otherPartyMessage = chatMessages.find((message) => !message.fromMe && message.senderJid && !message.senderJid.endsWith('@g.us'))
+        const title = otherPartyMessage?.senderJid
+          || (chatJid.endsWith('@g.us') ? (chatMessages.find((message) => message.senderJid && !message.senderJid.endsWith('@g.us'))?.senderJid || chatJid) : (chatMessages[0]?.senderJid || chatJid))
         const displayName = title === chatJid ? chatJid : title
         const previewText = newest?.text || (newest?.mediaType ? `[${newest.mediaType}]` : '[No content]')
         return { chatJid, title: displayName, previewText, messages: sorted }
