@@ -287,6 +287,8 @@ type DeletedMessage = {
   fileName: string | null
   mimetype: string | null
   mediaPath: string | null
+  contentRecovered?: boolean
+  contentSource?: 'captured' | 'fallback'
 }
 
 function getDeletedMediaPreviewUrl(message: DeletedMessage, token: string) {
@@ -528,7 +530,12 @@ function DeletedMessages() {
                     <div className={`max-w-[85%] rounded-2xl border p-3 shadow-sm ${isOwn ? 'border-primary/20 bg-primary/10 text-primary-foreground' : 'border-border bg-background text-foreground'}`}>
                       <div className="mb-2 flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
                         <span>{message.senderJid || 'Pengirim tidak dikenali'} {isOwn ? '(bot)' : ''}</span>
-                        <span>{formatDate(message.deletedAt)}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{formatDate(message.deletedAt)}</span>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 font-medium ${message.contentRecovered ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                            {message.contentRecovered ? 'Recovered' : 'Fallback'}
+                          </span>
+                        </div>
                       </div>
 
                       {message.text ? <p className="whitespace-pre-wrap text-sm">{message.text}</p> : null}

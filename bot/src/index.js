@@ -684,7 +684,11 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Mesej dipadam.') 
   const logs = loadDeletedMessageLogs();
   if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return false;
 
-  const preservedText = String(captured?.text || '').trim() || String(fallbackText || '').trim() || 'Mesej dipadam.';
+  const originalText = String(captured?.text || '').trim();
+  const fallbackTextValue = String(fallbackText || '').trim() || 'Mesej dipadam.';
+  const preservedText = originalText || fallbackTextValue;
+  const contentRecovered = Boolean(originalText && originalText !== fallbackTextValue);
+
   logs.unshift({
     ...captured,
     id: messageId,
@@ -694,6 +698,8 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Mesej dipadam.') 
     timestamp: captured?.timestamp || new Date().toISOString(),
     deletedAt: new Date().toISOString(),
     text: preservedText,
+    contentRecovered,
+    contentSource: contentRecovered ? 'captured' : 'fallback',
   });
   deletedMessageLogs = logs.slice(0, MAX_DELETED_MESSAGE_LOGS);
   saveDeletedMessageLogs();
