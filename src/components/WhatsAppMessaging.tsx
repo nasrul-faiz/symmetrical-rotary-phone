@@ -545,6 +545,7 @@ function DeletedMessages() {
   )
 }
 
+
 type ContactCategory = "Customer" | "Supplier" | "Support" | "Other"
 
 type ContactRecord = {

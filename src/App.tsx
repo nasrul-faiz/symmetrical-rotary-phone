@@ -2057,8 +2057,6 @@ function AppContent() {
         return { parent: { label: contentText.breadcrumb.botWhatsApp }, current: "Send Chat" }
       case "bot-schedule-chat":
         return { parent: { label: contentText.breadcrumb.botWhatsApp }, current: "Schedule Chat" }
-      case "bot-delete-message":
-        return { parent: { label: contentText.breadcrumb.botWhatsApp }, current: "Delete Massage" }
       case "bot-contact":
         return { parent: { label: contentText.breadcrumb.botWhatsApp }, current: "Contact" }
       case "bot-command":
