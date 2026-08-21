@@ -381,6 +381,28 @@ test('treats protocol upsert events as deleted-message events even when the mess
   clearDeletedMessageLogs();
 });
 
+test('extracts deleted-message ids from WhatsApp delete events that keep the chat jid on the parent object and ids inside keys', () => {
+  clearDeletedMessageLogs();
+
+  const deleteEvent = {
+    remoteJid: '60123456789@s.whatsapp.net',
+    keys: [{
+      id: 'delete-event-keys-array-1',
+      fromMe: false,
+    }],
+  };
+
+  const candidates = extractDeletionCandidates(deleteEvent);
+  assert.ok(candidates.some((candidate) => String(candidate?.id || candidate?.key?.id || '').includes('delete-event-keys-array-1')));
+
+  const recorded = recordDeletedMessage(deleteEvent, 'Mesej dipadam.');
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs()[0].id, 'delete-event-keys-array-1');
+  assert.equal(getDeletedMessageLogs()[0].chatJid, '60123456789@s.whatsapp.net');
+
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });

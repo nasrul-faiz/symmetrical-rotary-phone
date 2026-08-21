@@ -436,7 +436,7 @@ export async function captureMessageForAudit(msg) {
 
 function buildDeletedMessageCapturePayload(rawPayload = {}) {
   const protocolMessage = rawPayload?.update?.message?.protocolMessage || rawPayload?.message?.protocolMessage || rawPayload?.protocolMessage || rawPayload?.data?.protocolMessage || null;
-  const normalizedKey = rawPayload?.key || protocolMessage?.key || rawPayload || {};
+  const normalizedKey = rawPayload?.key || rawPayload?.keys?.[0] || protocolMessage?.key || rawPayload || {};
   const message = rawPayload?.message || rawPayload?.update?.message || rawPayload?.data?.message || protocolMessage?.message || null;
   const key = {
     id: normalizedKey?.id || rawPayload?.id || '',
@@ -456,6 +456,41 @@ function buildDeletedMessageCapturePayload(rawPayload = {}) {
   };
 }
 
+function getDeletionKeyCandidates(rawKey = {}) {
+  const candidates = [
+    rawKey?.key,
+    rawKey?.message?.key,
+    rawKey?.update?.key,
+    rawKey?.update?.message?.key,
+    rawKey?.update?.message?.protocolMessage?.key,
+    rawKey?.message?.protocolMessage?.key,
+    rawKey?.protocolMessage?.key,
+    rawKey?.data?.key,
+    rawKey?.data?.message?.key,
+    rawKey?.data?.protocolMessage?.key,
+    rawKey,
+  ];
+
+  for (const nestedKeyList of [
+    rawKey?.keys,
+    rawKey?.message?.keys,
+    rawKey?.update?.keys,
+    rawKey?.update?.message?.keys,
+    rawKey?.update?.message?.protocolMessage?.keys,
+    rawKey?.message?.protocolMessage?.keys,
+    rawKey?.protocolMessage?.keys,
+    rawKey?.data?.keys,
+    rawKey?.data?.message?.keys,
+    rawKey?.data?.protocolMessage?.keys,
+  ]) {
+    if (Array.isArray(nestedKeyList)) {
+      candidates.push(...nestedKeyList);
+    }
+  }
+
+  return candidates.filter(Boolean);
+}
+
 function findCapturedMessageById(messageId = '') {
   const targetId = String(messageId || '').trim();
   if (!targetId) return null;
@@ -470,42 +505,16 @@ function findCapturedMessageById(messageId = '') {
 }
 
 function inferDeletedMessageSender(rawKey = {}) {
-  const candidates = [
-    rawKey?.key,
-    rawKey?.message?.key,
-    rawKey?.update?.key,
-    rawKey?.update?.message?.key,
-    rawKey?.update?.message?.protocolMessage?.key,
-    rawKey?.message?.protocolMessage?.key,
-    rawKey?.protocolMessage?.key,
-    rawKey?.data?.key,
-    rawKey?.data?.message?.key,
-    rawKey?.data?.protocolMessage?.key,
-    rawKey,
-  ].filter(Boolean);
-
+  const candidates = getDeletionKeyCandidates(rawKey);
   const selected = candidates.find((candidate) => candidate && (candidate.participant || candidate.participantPn || candidate.senderJid || candidate.fromMe !== undefined)) || rawKey || {};
   return String(selected.participant || selected.participantPn || selected.senderJid || '').trim();
 }
 
 function normalizeDeletedMessageKey(rawKey = {}) {
-  const candidates = [
-    rawKey?.key,
-    rawKey?.message?.key,
-    rawKey?.update?.key,
-    rawKey?.update?.message?.key,
-    rawKey?.update?.message?.protocolMessage?.key,
-    rawKey?.message?.protocolMessage?.key,
-    rawKey?.protocolMessage?.key,
-    rawKey?.data?.key,
-    rawKey?.data?.message?.key,
-    rawKey?.data?.protocolMessage?.key,
-    rawKey,
-  ].filter(Boolean);
-
-  const selected = candidates.find((candidate) => candidate && (candidate.remoteJid || candidate.id)) || rawKey || {};
-  const remoteJid = String(selected.remoteJid || rawKey?.remoteJid || selected?.remoteJid || '').trim();
-  const id = String(selected.id || rawKey?.id || '').trim();
+  const candidates = getDeletionKeyCandidates(rawKey);
+  const preferredKey = candidates.find((candidate) => candidate && typeof candidate === 'object' && candidate.id) || candidates.find((candidate) => candidate && typeof candidate === 'object' && (candidate.remoteJid || candidate.id)) || rawKey || {};
+  const remoteJid = String(preferredKey.remoteJid || rawKey?.remoteJid || '').trim();
+  const id = String(preferredKey.id || rawKey?.id || '').trim();
 
   if (!id && !remoteJid) return null;
 
@@ -556,7 +565,7 @@ export function extractDeletionCandidates(rawPayload = {}) {
       candidates.push(current);
     }
 
-    for (const child of [
+    const childNodes = [
       current?.key,
       current?.message,
       current?.update,
@@ -574,7 +583,13 @@ export function extractDeletionCandidates(rawPayload = {}) {
       current?.data?.key,
       current?.message?.protocolMessage?.key,
       current?.update?.message?.protocolMessage?.key,
-    ]) {
+      ...(Array.isArray(current?.keys) ? current.keys : []),
+      ...(Array.isArray(current?.message?.keys) ? current.message.keys : []),
+      ...(Array.isArray(current?.update?.keys) ? current.update.keys : []),
+      ...(Array.isArray(current?.data?.keys) ? current.data.keys : []),
+    ];
+
+    for (const child of childNodes) {
       if (child && typeof child === 'object' && !seen.has(child)) {
         queue.push(child);
       }
