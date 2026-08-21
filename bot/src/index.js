@@ -510,6 +510,24 @@ function inferDeletedMessageSender(rawKey = {}) {
   return String(selected.participant || selected.participantPn || selected.senderJid || '').trim();
 }
 
+export function hasDeleteNotificationSignal(candidate = {}) {
+  if (!candidate || typeof candidate !== 'object') return false;
+
+  const protocolMessage = candidate?.update?.message?.protocolMessage
+    || candidate?.message?.protocolMessage
+    || candidate?.protocolMessage
+    || candidate?.data?.protocolMessage
+    || null;
+
+  const messageStubType = candidate?.update?.message?.messageStubType
+    ?? candidate?.message?.messageStubType
+    ?? candidate?.messageStubType
+    ?? candidate?.data?.message?.messageStubType
+    ?? null;
+
+  return Boolean(protocolMessage || messageStubType !== null);
+}
+
 function normalizeDeletedMessageKey(rawKey = {}) {
   const candidateObjects = [rawKey, ...getDeletionKeyCandidates(rawKey)];
   let bestMatch = { id: '', remoteJid: '' };
@@ -3152,7 +3170,12 @@ Contoh: ${commandPrefix}wlink 60177501997`;
   }
 
   const isExplicitContactCommand = command === 'contact' || command === 'c';
-  const isShortContactLookup = command.length > 1 && command.startsWith('c') && command !== 'contact' && command !== 'csv';
+  const excludedShortContactPrefixes = new Set(['cari']);
+  const isShortContactLookup = command.length > 1
+    && command.startsWith('c')
+    && !excludedShortContactPrefixes.has(command.toLowerCase())
+    && command !== 'contact'
+    && command !== 'csv';
 
   if (isExplicitContactCommand || isShortContactLookup) {
     const baseQuery = command === 'contact' ? (arg || '') : command.startsWith('c') ? command.slice(1) || arg || '' : arg || '';
@@ -3775,7 +3798,7 @@ export async function startBot(overrides = {}) {
 
         const protocolMessage = msg?.message?.protocolMessage || null;
         const messageStubType = msg?.message?.messageStubType ?? msg?.messageStubType ?? null;
-        if (protocolMessage || messageStubType !== null || type === 'protocol') {
+        if (hasDeleteNotificationSignal(msg) || (type === 'protocol' && (protocolMessage || messageStubType !== null))) {
           recordDeletedMessage(msg, 'Mesej dipadam.');
         }
 
@@ -4054,7 +4077,7 @@ export async function startBot(overrides = {}) {
       for (const candidate of extractDeletionCandidates(update)) {
         const protocolMessage = candidate?.update?.message?.protocolMessage || candidate?.message?.protocolMessage || candidate?.protocolMessage || candidate?.data?.protocolMessage || null;
         const messageStubType = candidate?.update?.message?.messageStubType ?? candidate?.message?.messageStubType ?? candidate?.messageStubType ?? null;
-        if (protocolMessage || messageStubType !== null) {
+        if (hasDeleteNotificationSignal(candidate) || (protocolMessage || messageStubType !== null)) {
           recordDeletedMessage(candidate, 'Mesej dipadam.');
         }
       }
@@ -4067,7 +4090,7 @@ export async function startBot(overrides = {}) {
       const deleteKeys = Array.isArray(deleteEvent?.keys) ? deleteEvent.keys : [deleteEvent];
       for (const item of deleteKeys) {
         for (const candidate of extractDeletionCandidates(item ?? deleteEvent)) {
-          const hasDeletionSignal = Boolean(
+          const hasDeletionSignal = hasDeleteNotificationSignal(candidate) || Boolean(
             candidate?.key ||
             candidate?.id ||
             candidate?.remoteJid ||

@@ -22,6 +22,7 @@ import {
   extractDeletionCandidates,
   getBotMessageBehaviorSettings,
   getDeletedMessageLogs,
+  hasDeleteNotificationSignal,
   hydrateCapturedMessageCache,
   isAllowedGroup,
   normalizeButtonPayload,
@@ -206,6 +207,35 @@ test('records deleted messages even when the original record is not cached', () 
   assert.equal(getDeletedMessageLogs()[0].text, 'Mesej dipadam.');
 
   clearDeletedMessageLogs();
+});
+
+test('ignores bare protocol upserts that are not real delete revoke signals', () => {
+  const bareProtocolEvent = {
+    key: {
+      id: 'protocol-system-1',
+      remoteJid: '60123456789@s.whatsapp.net',
+      fromMe: false,
+    },
+    type: 'protocol',
+    message: {
+      conversation: 'normal incoming message that should not be treated as delete',
+    },
+    messageTimestamp: Math.floor(Date.now() / 1000),
+  };
+
+  assert.equal(hasDeleteNotificationSignal(bareProtocolEvent), false);
+  assert.equal(hasDeleteNotificationSignal({
+    message: {
+      protocolMessage: {
+        type: 'REVOKE',
+        key: {
+          id: 'actual-revoke-1',
+          remoteJid: '60123456789@s.whatsapp.net',
+          fromMe: false,
+        },
+      },
+    },
+  }), true);
 });
 
 test('restores persisted deleted-message content after a bot restart', () => {
