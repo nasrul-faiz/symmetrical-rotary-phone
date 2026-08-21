@@ -511,10 +511,65 @@ function inferDeletedMessageSender(rawKey = {}) {
 }
 
 function normalizeDeletedMessageKey(rawKey = {}) {
-  const candidates = getDeletionKeyCandidates(rawKey);
-  const preferredKey = candidates.find((candidate) => candidate && typeof candidate === 'object' && candidate.id) || candidates.find((candidate) => candidate && typeof candidate === 'object' && (candidate.remoteJid || candidate.id)) || rawKey || {};
-  const remoteJid = String(preferredKey.remoteJid || rawKey?.remoteJid || '').trim();
-  const id = String(preferredKey.id || rawKey?.id || '').trim();
+  const candidateObjects = [rawKey, ...getDeletionKeyCandidates(rawKey)];
+  let bestMatch = { id: '', remoteJid: '' };
+
+  for (const candidate of candidateObjects) {
+    if (!candidate || typeof candidate !== 'object') continue;
+
+    const idFromCandidate = String(
+      candidate?.id
+      || candidate?.key?.id
+      || candidate?.message?.key?.id
+      || candidate?.message?.protocolMessage?.key?.id
+      || candidate?.update?.key?.id
+      || candidate?.update?.message?.key?.id
+      || candidate?.update?.message?.protocolMessage?.key?.id
+      || candidate?.data?.key?.id
+      || candidate?.data?.message?.key?.id
+      || candidate?.data?.protocolMessage?.key?.id
+      || candidate?.protocolMessage?.key?.id
+      || ''
+    ).trim();
+
+    const remoteJidFromCandidate = String(
+      candidate?.remoteJid
+      || candidate?.key?.remoteJid
+      || candidate?.message?.remoteJid
+      || candidate?.message?.key?.remoteJid
+      || candidate?.message?.protocolMessage?.key?.remoteJid
+      || candidate?.update?.remoteJid
+      || candidate?.update?.key?.remoteJid
+      || candidate?.update?.message?.remoteJid
+      || candidate?.update?.message?.key?.remoteJid
+      || candidate?.update?.message?.protocolMessage?.key?.remoteJid
+      || candidate?.data?.remoteJid
+      || candidate?.data?.key?.remoteJid
+      || candidate?.data?.message?.remoteJid
+      || candidate?.data?.message?.key?.remoteJid
+      || candidate?.data?.protocolMessage?.key?.remoteJid
+      || candidate?.protocolMessage?.key?.remoteJid
+      || ''
+    ).trim();
+
+    const candidateIsStrongMatch = Boolean(idFromCandidate && remoteJidFromCandidate);
+    const candidateHasId = Boolean(idFromCandidate);
+    const candidateHasRemoteJid = Boolean(remoteJidFromCandidate);
+
+    if (candidateIsStrongMatch) {
+      return { remoteJid: remoteJidFromCandidate, id: idFromCandidate };
+    }
+
+    if (candidateHasId && !bestMatch.id) {
+      bestMatch.id = idFromCandidate;
+    }
+
+    if (candidateHasRemoteJid && !bestMatch.remoteJid) {
+      bestMatch.remoteJid = remoteJidFromCandidate;
+    }
+  }
+
+  const { id, remoteJid } = bestMatch;
 
   if (!id && !remoteJid) return null;
 

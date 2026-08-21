@@ -403,6 +403,27 @@ test('extracts deleted-message ids from WhatsApp delete events that keep the cha
   clearDeletedMessageLogs();
 });
 
+test('records deleted messages when the chat id sits on a parent wrapper and the message id is nested inside the key object', () => {
+  clearDeletedMessageLogs();
+
+  const deleteEvent = {
+    message: {
+      remoteJid: '60123456789@s.whatsapp.net',
+      key: {
+        id: 'nested-parent-remotejid-1',
+        fromMe: false,
+      },
+    },
+  };
+
+  const recorded = recordDeletedMessage(deleteEvent, 'Mesej dipadam.');
+  assert.equal(recorded, true);
+  assert.equal(getDeletedMessageLogs()[0].id, 'nested-parent-remotejid-1');
+  assert.equal(getDeletedMessageLogs()[0].chatJid, '60123456789@s.whatsapp.net');
+
+  clearDeletedMessageLogs();
+});
+
 test('normalizes phone numbers for pairing', () => {
   assert.equal(normalizePhoneNumber('+60 12-345 6789'), '60123456789');
 });
