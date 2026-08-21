@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Create Schedule</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <script>
+      (function () {
+        try {
+          var storedTheme = window.localStorage.getItem('schedulebot-theme');
+          document.documentElement.setAttribute('data-theme', storedTheme === 'light' ? 'light' : 'dark');
+        } catch (error) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="share-create-body">
+    <button class="icon-btn theme-toggle-btn share-theme-toggle" id="shareThemeToggleBtn" type="button" aria-label="Toggle light/dark mode">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+      </svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+    </button>
+
+    <main class="share-create-main">
+      <section class="share-create-wrap">
+        <article class="card share-create-card">
+          <div class="card-header">
+            <h1 class="card-title">Create Schedule</h1>
+            <p class="card-description">Use this page to submit a new scheduled WhatsApp message.</p>
+          </div>
+
+          <div class="card-content">
+            <form id="publicScheduleForm" autocomplete="off">
+              <div class="field">
+                <label for="publicScheduleRepeatType">Repeat</label>
+                <select id="publicScheduleRepeatType" name="repeatType" required>
+                  <option value="" selected disabled>Select repeat option</option>
+                  <option value="none">Don't repeat (send once)</option>
+                  <option value="daily">Every day</option>
+                  <option value="weekly">Specific days every week</option>
+                </select>
+                <p class="hint">Repeating schedules automatically queue their next send time after each run.</p>
+              </div>
+
+              <div class="field" id="publicScheduleRepeatDaysField" hidden>
+                <label>Repeat On</label>
+                <button type="button" class="btn btn-outline command-detail-trigger schedule-repeat-days-trigger" id="publicScheduleRepeatDaysTrigger" data-popover-target="publicScheduleRepeatDaysPopover">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16">
+                    <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                    <path d="M16 2v4M8 2v4M3 10h18"></path>
+                  </svg>
+                  <span id="publicScheduleRepeatDaysTriggerLabel">Select days</span>
+                </button>
+                <p class="hint">Pick one or more days of the week to send this message on.</p>
+
+                <div class="command-detail-popover" id="publicScheduleRepeatDaysPopover" style="position: static; margin-top: 10px;" role="dialog" aria-label="Select repeat days">
+                  <p class="command-detail-popover-title">Repeat On</p>
+                  <div class="weekday-picker" id="publicScheduleRepeatDaysPicker">
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="1" /><span>Mon</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="2" /><span>Tue</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="3" /><span>Wed</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="4" /><span>Thu</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="5" /><span>Fri</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="6" /><span>Sat</span></label>
+                    <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="0" /><span>Sun</span></label>
+                  </div>
+                  <div class="command-detail-popover-actions">
+                    <button type="button" class="btn btn-primary btn-sm" id="publicScheduleRepeatDaysDoneBtn">Done</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field field-narrow" id="publicScheduleSendTimeField" hidden>
+                <label for="publicScheduleAt">Send Time</label>
+                <input id="publicScheduleAt" name="scheduleAt" type="datetime-local" required />
+              </div>
+
+              <div class="field" id="publicScheduleMediaTypeField" hidden>
+                <label for="publicScheduleMediaType">Attach Media <span class="muted">(optional)</span></label>
+                <select id="publicScheduleMediaType" name="mediaType" required>
+                  <option value="" selected disabled>Select media option</option>
+                  <option value="none">No media</option>
+                  <% mediaTypes.forEach((type) => { %>
+                  <option value="<%= type %>"><%= type %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div id="public-schedule-media-fields" hidden>
+                <div class="field" id="publicScheduleMediaSourceField">
+                  <label>Media Source</label>
+                  <div class="source-tabs" role="tablist" aria-label="Schedule media source selector">
+                    <button type="button" class="source-tab active" data-public-schedule-media-source="url" role="tab" aria-selected="true">By URL</button>
+                    <button type="button" class="source-tab" data-public-schedule-media-source="upload" role="tab" aria-selected="false">Upload File</button>
+                  </div>
+                  <input id="publicScheduleMediaSource" name="mediaSource" type="hidden" value="url" />
+                </div>
+
+                <div class="field" id="publicScheduleMediaUrlField">
+                  <label for="publicScheduleMediaUrl">Media URL</label>
+                  <input id="publicScheduleMediaUrl" name="mediaUrl" placeholder="https://..." />
+                </div>
+
+                <div class="field" id="publicScheduleMediaUploadField" hidden>
+                  <label for="publicScheduleMediaUpload">Upload Media File <span class="muted">(max 20MB)</span></label>
+                  <input id="publicScheduleMediaUpload" name="mediaUpload" type="file" />
+                </div>
+
+                <div class="field" id="publicScheduleFileNameField" hidden>
+                  <label for="publicScheduleFileName">File Name <span class="muted">(document only, optional)</span></label>
+                  <input id="publicScheduleFileName" name="fileName" placeholder="brochure.pdf" />
+                </div>
+              </div>
+
+              <div id="publicScheduleTargetStep" hidden>
+                <div class="field">
+                  <label for="publicTargetType">Target Type</label>
+                  <select id="publicTargetType" name="targetType" required>
+                    <option value="group" selected>Group Chat</option>
+                    <option value="personal">Personal Chat</option>
+                  </select>
+                </div>
+
+                <div class="field" id="publicTargetValueField">
+                  <label for="publicTargetValue" id="publicTargetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
+                  <input id="publicTargetValue" name="targetValue" required />
+                  <p class="hint" id="publicTargetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
+                </div>
+
+                <div class="group-tools" id="publicGroupTools">
+                  <div class="group-tools-head">
+                    <label for="publicGroupPicker">Select Group From WhatsApp Account</label>
+                    <button type="button" class="btn btn-outline btn-sm" id="publicRefreshGroupsBtn">Refresh Groups</button>
+                  </div>
+                  <select id="publicGroupPicker">
+                    <option value="">Loading group list...</option>
+                  </select>
+                  <p class="hint" id="publicGroupFetchHint">Pick a group to auto-fill the ID.</p>
+                </div>
+
+                <div class="group-tools" id="publicPersonalChatTools" hidden>
+                  <div class="group-tools-head">
+                    <label for="publicPersonalChatPicker">Generate From Current Personal Chats</label>
+                    <button type="button" class="btn btn-outline btn-sm" id="publicRefreshPersonalChatsBtn">Refresh Chats</button>
+                  </div>
+                  <select id="publicPersonalChatPicker">
+                    <option value="">Loading personal chat list...</option>
+                  </select>
+                  <p class="hint" id="publicPersonalChatFetchHint">Pick a personal chat to auto-fill the destination ID.</p>
+                </div>
+
+                <div class="field">
+                  <label for="publicMessage">Message</label>
+                  <textarea id="publicMessage" name="message" rows="4" required></textarea>
+                </div>
+
+                <div class="field" id="publicScheduleButtonsField">
+                  <div class="field-head">
+                    <label>Interactive Buttons <span class="muted">(optional)</span></label>
+                    <div class="field-head-actions">
+                      <button type="button" class="btn btn-outline btn-sm" id="publicScheduleAddButtonRowBtn">Add Button</button>
+                    </div>
+                  </div>
+                  <div id="publicScheduleButtonRows" class="button-rows"></div>
+                  <p class="hint">Format butang: quick reply, link, call, WhatsApp, dan copy code.</p>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="publicScheduleSubmitBtn">Save Schedule</button>
+            </form>
+            <p class="feedback" id="publicScheduleFeedback"></p>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/public/schedule-share.js"></script>
+  </body>
+</html>

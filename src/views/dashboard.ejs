@@ -1,0 +1,1921 @@
+<%
+  // Safe JSON helper: serializes data for embedding in script blocks.
+  // Uses Unicode escapes for <, > and & to prevent XSS and HTML-entity corruption.
+  function safeJson(data) {
+    return JSON.stringify(data)
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026');
+  }
+%>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>ScheduleBot Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/public/styles.css" />
+    <script>
+      (function () {
+        try {
+          var storedTheme = window.localStorage.getItem('schedulebot-theme');
+          var normalizedTheme = storedTheme === 'dark' ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', normalizedTheme);
+        } catch (error) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+
+      (function () {
+        if (window.location.hash) {
+          document.documentElement.classList.add('has-route-hash');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app" id="top">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" focusable="false">
+              <path d="M16.001 3C9.096 3 3.5 8.596 3.5 15.5c0 2.42.674 4.68 1.845 6.607L3 29l7.093-2.298A12.44 12.44 0 0 0 16.001 28C22.906 28 28.5 22.404 28.5 15.5S22.906 3 16.001 3Zm7.243 17.6c-.31.87-1.532 1.6-2.516 1.81-.67.14-1.545.25-4.49-.96-3.77-1.56-6.196-5.39-6.386-5.64-.183-.25-1.533-2.04-1.533-3.89 0-1.85.97-2.76 1.31-3.14.34-.38.744-.47 1-.47.256 0 .512.003.735.014.235.011.552-.089.863.66.31.75 1.058 2.6 1.15 2.79.09.19.15.42.03.67-.12.25-.18.4-.36.61-.18.21-.38.47-.54.63-.18.18-.37.38-.16.74.21.36.94 1.55 2.02 2.51 1.39 1.24 2.56 1.62 2.92 1.8.36.18.57.15.78-.09.21-.24.9-1.04 1.14-1.4.24-.36.48-.3.8-.18.33.12 2.07.97 2.43 1.15.36.18.6.27.69.42.09.15.09.87-.22 1.74Z"/>
+            </svg>
+          </span>
+          <span class="brand-name">ScheduleBot</span>
+        </div>
+
+        <div class="sidebar-body">
+          <p class="nav-group-label">Menu</p>
+          <nav class="sidebar-nav">
+            <a class="nav-item active" href="#profile">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"></path>
+              </svg>
+              <span>Profile</span>
+            </a>
+            <a class="nav-item" href="#schedule">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <path d="M3 10h18M8 2v4M16 2v4"></path>
+              </svg>
+              <span>Schedule</span>
+            </a>
+            <a class="nav-item" href="#send-message">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22 11 13 2 9 22 2z"></path>
+              </svg>
+              <span>Send Message</span>
+            </a>
+            <a class="nav-item" href="#custom-commands">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 17l6-6-6-6"></path>
+                <path d="M12 19h8"></path>
+              </svg>
+              <span>Command</span>
+            </a>
+            <a class="nav-item" href="#deleted-messages">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+              <span>Deleted Messages</span>
+            </a>
+            <a class="nav-item" href="#osint">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+                <path d="M11 8v6M8 11h6"></path>
+              </svg>
+              <span>OSINT</span>
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-footer">
+          <a class="nav-item" href="#account" title="Settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3a2 2 0 0 1 2 2v1.1a6.97 6.97 0 0 1 1.8 1.05l.78-.78a2 2 0 1 1 2.83 2.83l-.78.78A6.97 6.97 0 0 1 19.9 12H21a2 2 0 1 1 0 4h-1.1a6.97 6.97 0 0 1-1.05 1.8l.78.78a2 2 0 1 1-2.83 2.83l-.78-.78A6.97 6.97 0 0 1 14 21.9V23a2 2 0 1 1-4 0v-1.1a6.97 6.97 0 0 1-1.8-1.05l-.78.78a2 2 0 1 1-2.83-2.83l.78-.78A6.97 6.97 0 0 1 4.1 16H3a2 2 0 1 1 0-4h1.1a6.97 6.97 0 0 1 1.05-1.8l-.78-.78a2 2 0 1 1 2.83-2.83l.78.78A6.97 6.97 0 0 1 10 6.1V5a2 2 0 0 1 2-2z"></path>
+              <circle cx="12" cy="14" r="3"></circle>
+            </svg>
+            <span>Setting</span>
+          </a>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="top-nav">
+          <div class="top-nav-inner">
+            <button class="icon-btn" id="sidebarMenuBtn" type="button" aria-label="Open menu">
+              <svg viewBox="0 0 32 32" fill="#25D366" aria-hidden="true">
+                <path d="M16.001 3C9.096 3 3.5 8.596 3.5 15.5c0 2.42.674 4.68 1.845 6.607L3 29l7.093-2.298A12.44 12.44 0 0 0 16.001 28C22.906 28 28.5 22.404 28.5 15.5S22.906 3 16.001 3Zm7.243 17.6c-.31.87-1.532 1.6-2.516 1.81-.67.14-1.545.25-4.49-.96-3.77-1.56-6.196-5.39-6.386-5.64-.183-.25-1.533-2.04-1.533-3.89 0-1.85.97-2.76 1.31-3.14.34-.38.744-.47 1-.47.256 0 .512.003.735.014.235.011.552-.089.863.66.31.75 1.058 2.6 1.15 2.79.09.19.15.42.03.67-.12.25-.18.4-.36.61-.18.21-.38.47-.54.63-.18.18-.37.38-.16.74.21.36.94 1.55 2.02 2.51 1.39 1.24 2.56 1.62 2.92 1.8.36.18.57.15.78-.09.21-.24.9-1.04 1.14-1.4.24-.36.48-.3.8-.18.33.12 2.07.97 2.43 1.15.36.18.6.27.69.42.09.15.09.87-.22 1.74Z"/>
+              </svg>
+            </button>
+            <span class="top-nav-divider" aria-hidden="true"></span>
+            <div class="top-nav-title-wrap">
+              <nav class="top-nav-breadcrumb" aria-label="Breadcrumb">
+                <span class="crumb" id="breadcrumbPage">Profile</span>
+                <span class="crumb-sep" id="breadcrumbSectionSep" hidden>/</span>
+                <span class="crumb is-current" id="breadcrumbSection" hidden></span>
+              </nav>
+            </div>
+            <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="Toggle light/dark mode">
+              <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+              </svg>
+              <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="container">
+          <section class="page" data-page="profile" id="profile">
+            <div class="profile-home-grid">
+              <article class="card profile-home-hero-card">
+                <div class="card-content profile-home-hero-content">
+                  <div class="profile-home-avatar" id="profileHomeAvatar" aria-hidden="true">
+                    <img id="profileHomeAvatarImage" src="<%= waState.connectedAccount?.avatarUrl || '' %>" alt="Profile avatar" referrerpolicy="no-referrer" crossorigin="anonymous" <%= waState.connectedAccount?.avatarUrl ? '' : 'hidden' %> />
+                    <span id="profileHomeAvatarFallback" <%= waState.connectedAccount?.avatarUrl ? 'hidden' : '' %>><%= (waState.connectedAccount?.displayName || 'SB').split(/\s+/).filter(Boolean).slice(0, 2).map((item) => item.charAt(0)).join('').toUpperCase() || 'SB' %></span>
+                  </div>
+                  <div class="profile-home-meta">
+                    <p class="profile-home-name" id="profileHomeName"><%= waState.connectedAccount?.displayName || 'ScheduleBot Admin' %></p>
+                    <p class="profile-home-subtitle" id="profileHomeSubtitle"><%= waState.connectedAccount?.about || 'Manage your bot profile, account settings, and command behavior.' %></p>
+                    <div class="profile-whatsapp-status" id="profileHomeConnectionBadge">
+                      <span class="status-indicator <%= waState.ready ? 'is-on' : 'is-off' %>"></span>
+                      <span class="profile-status-text">WhatsApp <%= waState.ready ? 'connected' : 'offline' %></span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card profile-home-summary-card">
+                <div class="card-header">
+                  <h2 class="card-title">Profile Summary</h2>
+                  <p class="card-description">Quick glance for connected WhatsApp account.</p>
+                </div>
+                <div class="card-content">
+                  <div class="profile-home-summary-list">
+                    <p class="profile-home-summary-item"><span>Display Name</span><strong id="profileHomeSummaryName"><%= waState.connectedAccount?.displayName || '-' %></strong></p>
+                    <p class="profile-home-summary-item"><span>Phone</span><strong id="profileHomeSummaryPhone"><%= waState.connectedAccount?.phoneNumber || '-' %></strong></p>
+                    <p class="profile-home-summary-item"><span>JID</span><strong id="profileHomeSummaryJid"><%= waState.connectedAccount?.jid || '-' %></strong></p>
+                    <p class="profile-home-summary-item"><span>Command Mode</span><strong id="profileHomeSummaryCommandMode"><%= accessControlSettings.commandMode === 'private' ? 'Private' : 'Public' %></strong></p>
+                    <p class="profile-home-summary-item"><span>Platform</span><strong id="profileHomeSummaryPlatform">-</strong></p>
+                    <p class="profile-home-summary-item"><span>Time Zone</span><strong id="profileHomeSummaryTimeZone">-</strong></p>
+                  </div>
+                  <div class="profile-home-actions">
+                    <a class="btn btn-outline" href="#account">Open Account Settings</a>
+                    <a class="btn btn-outline" href="#custom-commands">Manage Commands</a>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="sched-stat-row">
+              <div class="sched-stat-chip">
+                <div class="sched-stat-icon-wrap sched-stat-icon-total">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18M8 2v4M16 2v4"></path></svg>
+                </div>
+                <div class="sched-stat-body">
+                  <p class="sched-stat-label">Total</p>
+                  <p class="sched-stat-val"><%= scheduleStats.total %></p>
+                </div>
+              </div>
+              <div class="sched-stat-chip">
+                <div class="sched-stat-icon-wrap sched-stat-icon-pending">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                </div>
+                <div class="sched-stat-body">
+                  <p class="sched-stat-label">Pending</p>
+                  <p class="sched-stat-val"><%= scheduleStats.pending %></p>
+                </div>
+              </div>
+              <div class="sched-stat-chip">
+                <div class="sched-stat-icon-wrap sched-stat-icon-sent">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"></path><path d="M22 2L15 22 11 13 2 9 22 2z"></path></svg>
+                </div>
+                <div class="sched-stat-body">
+                  <p class="sched-stat-label">Sent</p>
+                  <p class="sched-stat-val"><%= scheduleStats.sent %></p>
+                </div>
+              </div>
+              <div class="sched-stat-chip">
+                <div class="sched-stat-icon-wrap sched-stat-icon-failed">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M15 9l-6 6M9 9l6 6"></path></svg>
+                </div>
+                <div class="sched-stat-body">
+                  <p class="sched-stat-label">Failed</p>
+                  <p class="sched-stat-val"><%= scheduleStats.failed %></p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="page" data-page="account" id="account" hidden>
+            <div class="account-settings-dropdown" id="accountSettingsHeaderDropdown" hidden>
+              <button type="button" class="account-settings-dropdown-trigger" id="accountSettingsDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="accountSettingsNav">
+                <span id="accountSettingsDropdownLabel">Setting</span>
+                <svg class="account-settings-dropdown-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <nav class="account-settings-nav" id="accountSettingsNav" role="listbox" aria-label="Account settings">
+                <button type="button" class="account-settings-tab active" data-account-tab="account" data-account-label="Account" role="option" aria-selected="true">Account</button>
+                <button type="button" class="account-settings-tab" data-account-tab="privacy" data-account-label="Privacy" role="option" aria-selected="false">Privacy</button>
+                <button type="button" class="account-settings-tab" data-account-tab="chats" data-account-label="Chats" role="option" aria-selected="false">Chats</button>
+                <button type="button" class="account-settings-tab" data-account-tab="notifications" data-account-label="Notifications" role="option" aria-selected="false">Notifications</button>
+                <button type="button" class="account-settings-tab" data-account-tab="linked-devices" data-account-label="Linked Devices" role="option" aria-selected="false">Linked Devices</button>
+                <button type="button" class="account-settings-tab" data-account-tab="storage" data-account-label="Storage" role="option" aria-selected="false">Storage & Help</button>
+              </nav>
+            </div>
+            <div class="account-layout">
+              <div class="account-settings-content">
+                <article class="card account-settings-panel" data-account-panel="account">
+                  <div class="card-header">
+                    <h2 class="card-title">Account</h2>
+                    <p class="card-description">Security and account access preferences.</p>
+                  </div>
+                  <div class="card-content">
+                    <div class="account-access-control-block">
+                      <h3 class="account-access-title">Access and control</h3>
+                      <p class="account-access-description">Set owner number used as primary admin contact.</p>
+
+                      <div class="field field-narrow">
+                        <label for="ownerNumberInput">Owner number</label>
+                        <input id="ownerNumberInput" type="tel" inputmode="numeric" pattern="[+]?[0-9]*" placeholder="6012xxxxxxx" />
+                        <p class="hint">Enter with country code, example: 6012xxxxxxx</p>
+                      </div>
+
+                      <div class="field field-narrow">
+                        <label for="commandModeSelect">Command Mode</label>
+                        <select id="commandModeSelect">
+                          <option value="public">Public - Anyone can use commands</option>
+                          <option value="private">Private - Owner only</option>
+                        </select>
+                        <p class="hint">Public allows all users, Private restricts to owner number only.</p>
+                      </div>
+
+                      <div class="field field-narrow">
+                        <label for="timezoneSettingSelect">Timezone</label>
+                        <select id="timezoneSettingSelect">
+                          <option value="Asia/Kuala_Lumpur">Asia/Kuala_Lumpur (GMT+8)</option>
+                          <option value="Asia/Jakarta">Asia/Jakarta (GMT+7)</option>
+                          <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                          <option value="Asia/Bangkok">Asia/Bangkok (GMT+7)</option>
+                          <option value="Asia/Manila">Asia/Manila (GMT+8)</option>
+                          <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                          <option value="Asia/Seoul">Asia/Seoul (GMT+9)</option>
+                          <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
+                          <option value="Australia/Perth">Australia/Perth (GMT+8)</option>
+                          <option value="Europe/London">Europe/London</option>
+                          <option value="Europe/Paris">Europe/Paris</option>
+                          <option value="America/New_York">America/New_York</option>
+                          <option value="America/Los_Angeles">America/Los_Angeles</option>
+                          <option value="UTC">UTC</option>
+                        </select>
+                        <p class="hint" id="timezoneSettingHint">Used for schedule create/view time conversion.</p>
+                      </div>
+
+                      <button type="button" class="btn btn-success btn-sm" id="ownerNumberSaveBtn">Save Settings</button>
+                      <p id="ownerNumberFeedback" class="feedback"></p>
+                      <p id="timezoneSettingFeedback" class="feedback"></p>
+                    </div>
+
+                    <div class="account-option-list">
+                      <p class="account-option-row"><span>Owner number</span><span class="muted" id="ownerNumberDisplay">-</span></p>
+                      <p class="account-option-row"><span>Command mode</span><span class="muted" id="commandModeDisplay">Public</span></p>
+                      <p class="account-option-row"><span>Two-step verification</span><span class="badge badge-outline">Enabled</span></p>
+                      <p class="account-option-row"><span>Change phone number</span><span class="muted">Use WhatsApp app</span></p>
+                      <p class="account-option-row"><span>Security notifications</span><span class="badge badge-outline">On</span></p>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card account-settings-panel" data-account-panel="privacy" hidden>
+                  <div class="card-header">
+                    <h2 class="card-title">Privacy</h2>
+                    <p class="card-description">Control who can see your profile and activity.</p>
+                  </div>
+                  <div class="card-content">
+                    <div class="account-option-list">
+                      <p class="account-option-row"><span>Last seen and online</span><span class="muted">My contacts</span></p>
+                      <p class="account-option-row"><span>Profile photo</span><span class="muted">Everyone</span></p>
+                      <p class="account-option-row"><span>About</span><span class="muted">My contacts</span></p>
+                      <p class="account-option-row"><span>Groups</span><span class="muted">My contacts except...</span></p>
+                      <p class="account-option-row"><span>Read receipts</span><span class="badge badge-outline">On</span></p>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card account-settings-panel" data-account-panel="chats" hidden>
+                  <div class="card-header">
+                    <h2 class="card-title">Chats</h2>
+                    <p class="card-description">Set chat behavior and appearance.</p>
+                  </div>
+                  <div class="card-content">
+                    <!-- ── Group Filter ─────────────────────────────── -->
+                    <div class="filter-section">
+                      <p class="filter-section-title">Penapis Group</p>
+                      <div class="account-option-list">
+                        <div class="account-option-row account-toggle-row">
+                          <div class="account-toggle-copy">
+                            <span>Respond dalam semua group</span>
+                            <span class="muted">Hidupkan untuk respond di semua group. Matikan untuk pilih group tertentu sahaja.</span>
+                          </div>
+                          <label class="switch" for="toggleGroupFilterAll">
+                            <input type="checkbox" id="toggleGroupFilterAll" <%= chatResponseSettings.groupFilterMode !== 'whitelist' ? 'checked' : '' %> />
+                            <span class="switch-slider" aria-hidden="true"></span>
+                            <span class="switch-label" id="toggleGroupFilterAllLabel"><%= chatResponseSettings.groupFilterMode !== 'whitelist' ? 'Semua Group' : 'Group Terpilih' %></span>
+                          </label>
+                        </div>
+                      </div>
+                      <div id="groupWhitelistPanel" class="filter-submenu" <%= chatResponseSettings.groupFilterMode === 'whitelist' ? '' : 'hidden' %>>
+                        <div class="filter-submenu-header">
+                          <span class="filter-submenu-label">Pilih group yang bot akan respond</span>
+                          <button type="button" class="btn btn-sm btn-outline" id="refreshGroupListBtn">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            Refresh senarai
+                          </button>
+                        </div>
+                        <div id="groupFilterList" class="group-filter-list">
+                          <p class="filter-empty" id="groupFilterEmpty">Klik "Refresh senarai" untuk memuatkan group WhatsApp anda.</p>
+                        </div>
+                        <div class="filter-submenu-footer">
+                          <p class="filter-feedback" id="groupFilterFeedback"></p>
+                          <button type="button" class="btn btn-primary btn-sm" id="saveGroupFilterBtn">Simpan pilihan</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ── Allowed Senders ──────────────────────────── -->
+                    <div class="filter-section">
+                      <p class="filter-section-title">Penapis Penghantar</p>
+                      <div class="account-option-list">
+                        <div class="account-option-row account-toggle-row">
+                          <div class="account-toggle-copy">
+                            <span>Respond untuk sesiapa</span>
+                            <span class="muted">Hidupkan untuk respond kepada semua pengguna. Matikan untuk hadkan kepada nombor tertentu sahaja.</span>
+                          </div>
+                          <label class="switch" for="toggleAllowedSendersAnyone">
+                            <input type="checkbox" id="toggleAllowedSendersAnyone" <%= chatResponseSettings.allowedSendersMode !== 'specific' ? 'checked' : '' %> />
+                            <span class="switch-slider" aria-hidden="true"></span>
+                            <span class="switch-label" id="toggleAllowedSendersAnyoneLabel"><%= chatResponseSettings.allowedSendersMode !== 'specific' ? 'Sesiapa' : 'Nombor Terpilih' %></span>
+                          </label>
+                        </div>
+                      </div>
+                      <div id="allowedSendersPanel" class="filter-submenu" <%= chatResponseSettings.allowedSendersMode === 'specific' ? '' : 'hidden' %>>
+                        <div class="filter-submenu-header">
+                          <span class="filter-submenu-label">Nombor yang dibenarkan (digit sahaja, cth: 601234567890)</span>
+                        </div>
+                        <div class="allowed-sender-input-row">
+                          <input type="text" id="allowedSenderInput" class="input" placeholder="601234567890" inputmode="numeric" />
+                          <button type="button" class="btn btn-primary btn-sm" id="addAllowedSenderBtn">Tambah</button>
+                        </div>
+                        <div id="allowedSendersList" class="allowed-senders-list">
+                          <% if (chatResponseSettings.allowedSenderNumbers && chatResponseSettings.allowedSenderNumbers.length) { %>
+                            <% chatResponseSettings.allowedSenderNumbers.forEach(function(num) { %>
+                              <span class="allowed-sender-chip"><%= num %></span>
+                            <% }) %>
+                          <% } else { %>
+                            <p class="filter-empty">Tiada nombor ditambah. Semua pengguna akan disekat apabila mod ini aktif.</p>
+                          <% } %>
+                        </div>
+                        <div class="filter-submenu-footer">
+                          <p class="filter-feedback" id="allowedSendersFeedback"></p>
+                          <button type="button" class="btn btn-primary btn-sm" id="saveAllowedSendersBtn">Simpan</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="account-option-list">
+                      <p class="account-option-row"><span>Theme</span><span class="muted">Follow dashboard theme</span></p>
+                      <p class="account-option-row"><span>Enter is send</span><span class="badge badge-outline">Off</span></p>
+                      <p class="account-option-row"><span>Media visibility</span><span class="badge badge-outline">On</span></p>
+                      <p class="account-option-row"><span>Font size</span><span class="muted">Medium</span></p>
+                    </div>
+                    <p id="botResponseSettingsFeedback" class="feedback"></p>
+                  </div>
+                </article>
+
+                <article class="card account-settings-panel" data-account-panel="notifications" hidden>
+                  <div class="card-header">
+                    <h2 class="card-title">Notifications</h2>
+                    <p class="card-description">Tune alerts for message, group, and call events.</p>
+                  </div>
+                  <div class="card-content">
+                    <div class="account-option-list">
+                      <p class="account-option-row"><span>Conversation tones</span><span class="badge badge-outline">On</span></p>
+                      <p class="account-option-row"><span>High priority notifications</span><span class="badge badge-outline">On</span></p>
+                      <p class="account-option-row"><span>Reaction notifications</span><span class="badge badge-outline">On</span></p>
+                      <p class="account-option-row"><span>Group notifications</span><span class="muted">Only mentions</span></p>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card account-settings-panel" data-account-panel="linked-devices" hidden>
+                  <div class="card-header">
+                    <h2 class="card-title">Linked Devices</h2>
+                    <p class="card-description">Connection state, QR pairing, and pairing code login.</p>
+                  </div>
+                  <div class="card-content linked-devices-shell">
+                    <div class="linked-devices-headline">
+                      <p class="linked-devices-kicker">Device Pairing Center</p>
+                      <p class="linked-devices-note">Choose how you want to connect this dashboard to your WhatsApp account.</p>
+                      <p id="linkedDevicesConnectionState" class="badge badge-outline" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;">Checking connection...</p>
+                    </div>
+
+                    <div class="method-tabs linked-method-tabs">
+                      <button type="button" class="method-tab active" id="methodTabQr" data-method="qr">
+                        <svg style="width: 16px; height: 16px; margin-right: 6px; display: inline; vertical-align: -2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>QR Code
+                      </button>
+                      <button type="button" class="method-tab" id="methodTabPhone" data-method="phone" <%= waState.ready ? 'disabled' : '' %>>
+                        <svg style="width: 16px; height: 16px; margin-right: 6px; display: inline; vertical-align: -2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><rect x="2" y="4" width="20" height="12" rx="2"></rect><path d="M2 16h20"></path></svg>Phone Number
+                      </button>
+                    </div>
+
+                    <div id="qr-method" class="method-panel linked-method-panel">
+                      <!-- Connected state -->
+                      <div id="wa-connected-wrap" class="connected-wrap linked-connected-wrap" <%= waState.ready ? '' : 'hidden' %>>
+                        <span class="connected-icon" aria-hidden="true">✓</span>
+                        <div style="text-align: center;">
+                          <p class="connected-title">WhatsApp connected</p>
+                          <p class="connected-subtitle">Your session is active and secure</p>
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-top: 4px;">
+                          <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <span style="width: 6px; height: 6px; background: currentColor; border-radius: 50%; display: inline-block;"></span>
+                            Active
+                          </span>
+                        </div>
+                        <div class="connected-details" id="waConnectedDetails" <%= waState.ready ? '' : 'hidden' %>>
+                          <p class="connected-detail-row">
+                            <span class="connected-detail-label">Name</span>
+                            <span class="connected-detail-value" id="waConnectedName"><%= waState.connectedAccount?.displayName || '-' %></span>
+                          </p>
+                          <p class="connected-detail-row">
+                            <span class="connected-detail-label">Phone</span>
+                            <span class="connected-detail-value" id="waConnectedPhone"><%= waState.connectedAccount?.phoneNumber || '-' %></span>
+                          </p>
+                          <p class="connected-detail-row">
+                            <span class="connected-detail-label">JID</span>
+                            <span class="connected-detail-value connected-detail-mono" id="waConnectedJid"><%= waState.connectedAccount?.jid || '-' %></span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- QR panel (shown when not connected or QR available) -->
+                      <div id="wa-qr-wrap" class="qr-wrap linked-qr-wrap <%= waState.ready ? 'is-connected' : '' %>" <%= waState.ready || waState.qrCodeDataUrl ? '' : 'hidden' %>>
+
+                        <!-- Connected overlay inside qr-wrap -->
+                        <div id="wa-qr-connected-banner" class="qr-connected-banner" <%= waState.ready ? '' : 'hidden' %>>
+                          <span class="qr-connected-banner-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M2 8.82A15.02 15.02 0 0 1 22 8.82" />
+                              <path d="M5 12.86a10 10 0 0 1 14 0" />
+                              <path d="M8.5 16.89a5 5 0 0 1 7 0" />
+                              <line x1="12" y1="20" x2="12.01" y2="20" />
+                            </svg>
+                          </span>
+                          <p class="qr-connected-banner-title">Bot sudah connected</p>
+                          <p class="qr-connected-banner-note">QR tak diperlukan selagi sesi masih aktif.</p>
+                          <span class="qr-connected-banner-pill">Connected</span>
+                        </div>
+
+                        <!-- QR frame with scanner corners + scan line -->
+                        <div class="qr-frame-wrap" id="waQrFrameWrap" <%= waState.ready ? 'hidden' : '' %>>
+                          <div class="qr-frame">
+                            <!-- The QR image -->
+                            <% if (waState.qrCodeDataUrl) { %>
+                            <img src="<%= waState.qrCodeDataUrl %>" alt="WhatsApp QR Code" class="qr" decoding="async" loading="eager" draggable="false" />
+                            <% } else { %>
+                            <img src="" alt="WhatsApp QR Code" class="qr" decoding="async" loading="eager" draggable="false" hidden />
+                            <% } %>
+                          </div>
+
+                          <!-- Timer pill + meta below frame -->
+                          <div class="qr-timer-row">
+                            <p id="waQrCountdown" class="qr-countdown" hidden></p>
+                            <p id="waQrMeta" class="qr-meta"><%= waState.qrCodeDataUrl ? 'Point your phone camera at the code' : 'Waiting for QR from WhatsApp…' %></p>
+                          </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="qr-instructions-card" id="wa-qr-instructions" <%= waState.ready ? 'hidden' : '' %>>
+                          <p class="qr-instructions-heading">How to scan</p>
+                          <ol class="qr-steps">
+                            <li class="qr-step">
+                              <span class="qr-step-num">1</span>
+                              <span class="qr-step-text">Open <strong>WhatsApp</strong> on your phone</span>
+                            </li>
+                            <li class="qr-step">
+                              <span class="qr-step-num">2</span>
+                              <span class="qr-step-text">Go to <strong>Settings → Linked Devices</strong></span>
+                            </li>
+                            <li class="qr-step">
+                              <span class="qr-step-num">3</span>
+                              <span class="qr-step-text">Tap <strong>Link a Device</strong></span>
+                            </li>
+                            <li class="qr-step">
+                              <span class="qr-step-num">4</span>
+                              <span class="qr-step-text">Point your camera at the QR code</span>
+                            </li>
+                          </ol>
+                          <button type="button" class="btn btn-outline btn-sm qr-refresh-btn" id="refreshQrBtn">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            Refresh QR
+                          </button>
+                        </div>
+
+                        <p id="wa-qr-caption" class="qr-caption" hidden><%= waState.ready ? 'WhatsApp already connected. QR scan is not required.' : '' %></p>
+                      </div>
+
+                      <!-- Empty state: bot is offline, no QR yet -->
+                      <p id="wa-qr-empty" class="muted" <%= !waState.ready && !waState.qrCodeDataUrl ? '' : 'hidden' %>>
+                        QR will appear automatically when re-login is needed.
+                      </p>
+                    </div>
+
+                    <div id="phone-method" class="method-panel linked-method-panel" hidden>
+                      <div class="linked-phone-wrap">
+                        <div class="field">
+                        <label for="pairingPhone">Phone Number</label>
+                        <input id="pairingPhone" type="tel" inputmode="numeric" pattern="[+]?[0-9]*" autocomplete="tel" placeholder="60812xxxxxxx" <%= waState.ready ? 'disabled' : '' %> />
+                        <p class="hint">Enter your WhatsApp number with country code, no + or spaces.</p>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-block" id="requestPairingBtn" <%= waState.ready ? 'disabled' : '' %>>Get Pairing Code</button>
+                        <p id="pairing-feedback" class="feedback"></p>
+
+                        <div id="pairing-code-wrap" class="pairing-code-wrap" hidden>
+                          <p class="muted">Your pairing code:</p>
+                          <p class="pairing-code" id="pairing-code-value"></p>
+                          <p class="hint">Open WhatsApp on your phone &rarr; Linked Devices &rarr; Link with phone number, then enter this code.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ul class="tips muted" id="account-target-tips" hidden></ul>
+                  </div>
+                </article>
+
+                <article class="card account-settings-panel" data-account-panel="storage" hidden>
+                  <div class="card-header">
+                    <h2 class="card-title">Storage & Help</h2>
+                    <p class="card-description">Usage summary and quick support shortcuts.</p>
+                  </div>
+                  <div class="card-content">
+                    <div class="account-option-list">
+                      <p class="account-option-row"><span>Media storage usage</span><span class="muted">Managed by server</span></p>
+                      <p class="account-option-row"><span>Auto-clean old logs</span><span class="badge badge-outline">Recommended</span></p>
+                      <p class="account-option-row"><span>Help center</span><a href="#top" class="muted">Open documentation</a></p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="page" data-page="schedule" id="schedule" hidden>
+            <div class="form-shell">
+            <div class="schedule-section-dropdown" id="scheduleSectionDropdown">
+              <button type="button" class="schedule-section-dropdown-trigger" id="scheduleSectionDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="scheduleSectionNav">
+                <span id="scheduleSectionDropdownLabel">Create Schedule</span>
+                <svg class="account-settings-dropdown-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <nav class="schedule-section-nav" id="scheduleSectionNav" role="listbox" aria-label="Schedule sections">
+                <button type="button" class="schedule-section-tab active" id="scheduleTabCreate" data-tab="create" role="option" aria-controls="schedule-create-panel" aria-selected="true">Create Schedule</button>
+                <button type="button" class="schedule-section-tab" id="scheduleTabList" data-tab="list" role="option" aria-controls="schedule-list-panel" aria-selected="false">Schedule List</button>
+              </nav>
+            </div>
+
+            <div class="method-panel" id="schedule-create-panel" role="tabpanel" aria-labelledby="scheduleTabCreate">
+              <article class="card" id="create-schedule">
+                <div class="card-header section-head">
+                  <div>
+                    <h2 class="card-title">Create Schedule</h2>
+                    <p class="card-description">Queue a new WhatsApp message</p>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" id="shareScheduleLinkBtn">Share Link</button>
+                </div>
+                <div class="card-content">
+                  <p id="shareScheduleLinkFeedback" class="feedback"></p>
+                  <form id="schedule-form">
+                    <p class="form-section-label">Schedule</p>
+                    <div class="field">
+                      <label for="scheduleRepeatType">Repeat</label>
+                      <select id="scheduleRepeatType" name="repeatType" required>
+                        <option value="" selected disabled>Select repeat option</option>
+                        <option value="none">Don't repeat (send once)</option>
+                        <option value="daily">Every day</option>
+                        <option value="weekly">Specific days every week</option>
+                      </select>
+                      <p class="hint">Repeating schedules automatically queue their next send time after each run.</p>
+                    </div>
+
+                    <div class="field" id="scheduleRepeatDaysField" hidden>
+                      <label>Repeat On</label>
+                      <button type="button" class="btn btn-outline command-detail-trigger schedule-repeat-days-trigger" id="scheduleRepeatDaysTrigger" data-popover-target="scheduleRepeatDaysPopover">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16">
+                          <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                          <path d="M16 2v4M8 2v4M3 10h18"></path>
+                        </svg>
+                        <span id="scheduleRepeatDaysTriggerLabel">Select days</span>
+                      </button>
+                      <p class="hint">Pick one or more days of the week to send this message on.</p>
+
+                      <div class="command-detail-popover" id="scheduleRepeatDaysPopover" style="position: static; margin-top: 10px;" role="dialog" aria-label="Select repeat days">
+                        <p class="command-detail-popover-title">Repeat On</p>
+                        <div class="weekday-picker" id="scheduleRepeatDaysPicker">
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="1" /><span>Mon</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="2" /><span>Tue</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="3" /><span>Wed</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="4" /><span>Thu</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="5" /><span>Fri</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="6" /><span>Sat</span></label>
+                          <label class="weekday-chip"><input type="checkbox" name="repeatDays" value="0" /><span>Sun</span></label>
+                        </div>
+                        <div class="command-detail-popover-actions">
+                          <button type="button" class="btn btn-primary btn-sm" id="scheduleRepeatDaysDoneBtn">Done</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="field field-narrow" id="scheduleSendTimeField" hidden>
+                      <label for="scheduleAt">Send Time</label>
+                      <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+                    </div>
+
+                    <div class="field" id="scheduleMediaTypeField" hidden>
+                      <label for="scheduleMediaType">Attach Media <span class="muted">(optional)</span></label>
+                      <select id="scheduleMediaType" name="mediaType" required>
+                        <option value="" selected disabled>Select media option</option>
+                        <option value="none">No media</option>
+                        <% mediaTypes.forEach((type) => { %>
+                        <option value="<%= type %>"><%= type %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+
+                    <div id="schedule-media-fields" hidden>
+                      <div class="field" id="scheduleMediaSourceField">
+                        <label>Media Source</label>
+                        <div class="source-tabs" role="tablist" aria-label="Schedule media source selector">
+                          <button type="button" class="source-tab active" data-schedule-media-source="url" role="tab" aria-selected="true">By URL</button>
+                          <button type="button" class="source-tab" data-schedule-media-source="upload" role="tab" aria-selected="false">Upload File</button>
+                        </div>
+                        <input id="scheduleMediaSource" name="mediaSource" type="hidden" value="url" />
+                      </div>
+
+                      <div class="field" id="scheduleMediaUrlField">
+                        <label for="scheduleMediaUrl">Media URL</label>
+                        <input id="scheduleMediaUrl" name="mediaUrl" placeholder="https://..." />
+                      </div>
+
+                      <div class="field" id="scheduleMediaUploadField" hidden>
+                        <label for="scheduleMediaUpload">Upload Media File <span class="muted">(max 20MB)</span></label>
+                        <input id="scheduleMediaUpload" name="mediaUpload" type="file" />
+                      </div>
+
+                      <div class="field" id="scheduleFileNameField" hidden>
+                        <label for="scheduleFileName">File Name <span class="muted">(document only, optional)</span></label>
+                        <input id="scheduleFileName" name="fileName" placeholder="brochure.pdf" />
+                      </div>
+                    </div>
+
+                    <div id="scheduleTargetStep" hidden>
+                      <hr class="form-divider" />
+                      <p class="form-section-label">Destination</p>
+                      <div class="field">
+                        <label for="targetType">Target Type</label>
+                        <select id="targetType" name="targetType" required>
+                          <option value="group" selected>Group Chat</option>
+                          <option value="personal">Personal Chat</option>
+                        </select>
+                      </div>
+
+                      <div class="field" id="targetValueField">
+                        <label for="targetValue" id="targetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
+                        <input id="targetValue" name="targetValue" list="targetValueGroupSuggestions" autocomplete="off" placeholder="Type an ID, or search a name…" required />
+                        <datalist id="targetValueGroupSuggestions"></datalist>
+                        <datalist id="targetValuePersonalSuggestions"></datalist>
+                        <p class="hint" id="targetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
+                        <div class="field-actions">
+                          <button type="button" class="btn btn-outline btn-sm" id="scheduleSelectChatBtn">Select Chat</button>
+                          <button type="button" class="btn btn-outline btn-sm" id="scheduleRefreshBtn">Refresh Groups</button>
+                        </div>
+                      </div>
+
+                      <hr class="form-divider" />
+                      <p class="form-section-label">Message</p>
+                      <div class="field">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="4" required></textarea>
+                      </div>
+
+                      <div class="field" id="scheduleButtonsField">
+                        <div class="field-head">
+                          <label>Interactive Buttons <span class="muted">(optional)</span></label>
+                          <div class="field-head-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="scheduleAddButtonRowBtn">Add Button</button>
+                          </div>
+                        </div>
+                        <div id="scheduleButtonRows" class="button-rows"></div>
+                        <p class="hint">Button format sama seperti Custom Command (quick reply, link, call, WhatsApp, copy code, single select).</p>
+                      </div>
+
+                      <button type="submit" class="btn btn-primary btn-block">Save Schedule</button>
+                    </div>
+                  </form>
+                  <p id="form-feedback" class="feedback"></p>
+                </div>
+              </article>
+            </div>
+            </div>
+
+            <div class="method-panel" id="schedule-list-panel" role="tabpanel" aria-labelledby="scheduleTabList" hidden>
+              <article class="card table-card" id="schedule-list">
+                <div class="card-header section-head">
+                  <div>
+                    <h2 class="card-title">Schedule List</h2>
+                    <p class="card-description">Track every pending, sent, and failed job in one clean table.</p>
+                  </div>
+                </div>
+                <div class="card-content no-pad">
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Type</th>
+                          <th>Details</th>
+                          <th>Repeat</th>
+                          <th>Media</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% if (!schedules.length) { %>
+                        <tr>
+                          <td colspan="7" class="muted">No schedules yet</td>
+                        </tr>
+                        <% } %>
+
+                        <% const weekdayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; %>
+                        <% schedules.forEach((item) => { %>
+                        <tr>
+                          <td><%= item.id %></td>
+                          <td>
+                            <span class="badge badge-outline">
+                              <%= item.targetType === 'group' ? 'group' : 'personal' %>
+                            </span>
+                          </td>
+                          <td class="schedule-details-cell">
+                            <div class="schedule-detail-actions">
+                              <button class="btn btn-outline btn-sm btn-view-schedule" data-id="<%= item.id %>">View</button>
+                            </div>
+                          </td>
+                          <td>
+                            <% if (item.repeatType === 'daily') { %>
+                            <span class="badge badge-outline">Daily</span>
+                            <% } else if (item.repeatType === 'weekly') { %>
+                            <span class="badge badge-outline"><%= (item.repeatDays || []).slice().sort().map((d) => weekdayShortNames[d]).join(', ') || 'Weekly' %></span>
+                            <% } else { %>
+                            <span class="muted">One-time</span>
+                            <% } %>
+                          </td>
+                          <td>
+                            <% if (item.mediaType) { %>
+                            <span class="badge badge-outline"><%= item.mediaType %></span>
+                            <% } else { %>
+                            <span class="muted">none</span>
+                            <% } %>
+                          </td>
+                          <td>
+                            <span class="badge badge-<%= item.status %>"><%= item.status %></span>
+                          </td>
+                          <td class="cell-action">
+                            <button class="btn btn-ghost btn-sm btn-delete" data-id="<%= item.id %>">Delete</button>
+                          </td>
+                        </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="page" data-page="send-message" id="send-message" hidden>
+            <div class="form-shell">
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Send Message</h2>
+                  <p class="card-description">Send a WhatsApp message instantly from the dashboard</p>
+                </div>
+                <div class="card-content">
+                  <form id="send-form">
+                    <p class="form-section-label">Destination</p>
+                    <div class="field">
+                      <label for="sendTargetType">Target Type</label>
+                      <select id="sendTargetType" name="targetType" required>
+                        <option value="group" selected>Group Chat</option>
+                        <option value="personal">Personal Chat</option>
+                      </select>
+                    </div>
+
+                    <div class="field" id="sendTargetValueField">
+                      <label for="sendTargetValue" id="sendTargetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
+                      <input id="sendTargetValue" name="targetValue" list="sendTargetValueGroupSuggestions" autocomplete="off" placeholder="Type an ID, or search a name…" required />
+                      <datalist id="sendTargetValueGroupSuggestions"></datalist>
+                      <datalist id="sendTargetValuePersonalSuggestions"></datalist>
+                      <p class="hint" id="sendTargetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
+                      <div class="field-actions">
+                        <button type="button" class="btn btn-outline btn-sm" id="sendSelectChatBtn">Select Chat</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="sendRefreshBtn">Refresh Groups</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="sendTargetClearBtn">Clear</button>
+                      </div>
+                    </div>
+
+                    <hr class="form-divider" />
+                    <p class="form-section-label">Message</p>
+                    <div class="field" id="sendMediaTypeField">
+                      <label for="sendMediaType">Attach Media <span class="muted">(optional)</span></label>
+                      <select id="sendMediaType" name="mediaType">
+                        <option value="">Select media type first</option>
+                        <option value="none">No media</option>
+                        <% mediaTypes.forEach((type) => { %>
+                        <option value="<%= type %>"><%= type %></option>
+                        <% }) %>
+                      </select>
+                      <p class="hint">Select media type to show related fields.</p>
+                    </div>
+
+                    <div id="send-media-fields" hidden>
+                      <div class="field" id="sendMediaSourceField">
+                        <label>Media Source</label>
+                        <div class="source-tabs" role="tablist" aria-label="Media source selector">
+                          <button type="button" class="source-tab active" data-send-media-source="url" role="tab" aria-selected="true">By URL</button>
+                          <button type="button" class="source-tab" data-send-media-source="upload" role="tab" aria-selected="false">Upload File</button>
+                        </div>
+                        <input id="sendMediaSource" name="mediaSource" type="hidden" value="url" />
+                        <p class="hint">Choose where media will be loaded from.</p>
+                      </div>
+
+                      <div class="field" id="sendMediaUrlField">
+                        <label for="sendMediaUrl">Media URL <span class="muted">(optional)</span></label>
+                        <input id="sendMediaUrl" name="mediaUrl" placeholder="https://..." />
+                      </div>
+
+                      <div class="field" id="sendMediaUploadField" hidden>
+                        <label for="sendMediaUpload">Upload Media File <span class="muted">(max 20MB)</span></label>
+                        <input id="sendMediaUpload" name="mediaUpload" type="file" />
+                        <p class="hint">Choose a file to upload and use as media source.</p>
+                      </div>
+
+                      <div class="field" id="sendFileNameField" hidden>
+                        <label for="sendFileName">File Name <span class="muted">(document only, optional)</span></label>
+                        <input id="sendFileName" name="fileName" placeholder="brochure.pdf" />
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="sendMessageText">Message</label>
+                      <textarea id="sendMessageText" name="message" rows="4"></textarea>
+                    </div>
+
+                    <div class="field" id="sendButtonsField">
+                      <div class="field-head">
+                        <label>Interactive Buttons <span class="muted">(optional)</span></label>
+                        <div class="field-head-actions">
+                          <button type="button" class="btn btn-outline btn-sm" id="sendAddButtonRowBtn">Add Button</button>
+                        </div>
+                      </div>
+                      <div id="sendButtonRows" class="button-rows"></div>
+                      <p class="hint">Button format sama seperti Custom Command (quick reply, link, call, WhatsApp, copy code, single select).</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Send Now</button>
+                  </form>
+                  <p id="send-feedback" class="feedback"></p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="page" data-page="custom-commands" id="custom-commands" hidden>
+            <div class="command-section-dropdown" id="commandSectionDropdown" hidden>
+              <button type="button" class="command-section-dropdown-trigger" id="commandSectionDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="commandSectionNav">
+                <span id="commandSectionDropdownLabel">Add Command</span>
+                <svg class="account-settings-dropdown-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <nav class="command-section-nav" id="commandSectionNav" role="listbox" aria-label="Custom command sections">
+                <button type="button" class="command-section-tab active" id="commandTabCreate" data-command-tab="create" data-command-label="Add Command" role="option" aria-selected="true">Add Command</button>
+                <button type="button" class="command-section-tab" id="commandTabList" data-command-tab="list" data-command-label="Command List" role="option" aria-selected="false">Command List</button>
+              </nav>
+            </div>
+
+            <div class="method-panel" id="command-create-panel" role="tabpanel" aria-labelledby="commandTabCreate">
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Add Custom Command</h2>
+                  <p class="card-description">Auto-reply to incoming WhatsApp messages by trigger</p>
+                </div>
+                <div class="card-content">
+                  <form id="command-form">
+                    <div class="field">
+                      <label for="commandTrigger">Trigger</label>
+                      <input id="commandTrigger" name="trigger" placeholder=".hello" required />
+                      <p class="hint">Auto adds . at the front, example: .hello</p>
+                    </div>
+
+                    <div class="field">
+                      <label for="commandMediaType">Media Type</label>
+                      <select id="commandMediaType" name="mediaType" required>
+                        <option value="">Select media type first</option>
+                        <option value="none">No media</option>
+                        <% mediaTypes.forEach((type) => { %>
+                        <option value="<%= type %>"><%= type %></option>
+                        <% }) %>
+                      </select>
+                      <p class="hint">Select media type to show related fields.</p>
+                    </div>
+
+                    <div id="command-advanced-fields" hidden>
+                      <div class="field" id="commandMediaSourceField">
+                        <label>Media Source</label>
+                        <div class="source-tabs" role="tablist" aria-label="Media source selector">
+                          <button type="button" class="source-tab active" data-command-media-source="url" role="tab" aria-selected="true">By URL</button>
+                          <button type="button" class="source-tab" data-command-media-source="upload" role="tab" aria-selected="false">Upload File</button>
+                        </div>
+                        <input id="commandMediaSource" name="mediaSource" type="hidden" value="url" />
+                        <p class="hint">Choose where media will be loaded from.</p>
+                      </div>
+
+                      <div class="field" id="commandMediaUrlField">
+                        <label for="commandMediaUrl">Media URL <span class="muted">(optional)</span></label>
+                        <input id="commandMediaUrl" name="mediaUrl" placeholder="https://..." />
+                      </div>
+
+                      <div class="field" id="commandMediaUploadField" hidden>
+                        <label for="commandMediaUpload">Upload Media File <span class="muted">(max 20MB)</span></label>
+                        <input id="commandMediaUpload" name="mediaUpload" type="file" />
+                        <p class="hint" id="commandMediaUploadHint">Choose a file to upload and use as media source.</p>
+                      </div>
+
+                      <div class="field" id="commandFileNameField" hidden>
+                        <label for="commandFileName">File Name <span class="muted">(document only, optional)</span></label>
+                        <input id="commandFileName" name="fileName" placeholder="brochure.pdf" />
+                      </div>
+
+                      <div class="field" id="commandResponseField">
+                        <label for="commandResponse">Response Text</label>
+                        <textarea id="commandResponse" name="response" rows="3" placeholder="Reply message..."></textarea>
+                        <p class="hint" id="commandResponseRuleHint">Response text is required when using media and button together.</p>
+                      </div>
+
+                      <div class="field" id="commandButtonsField">
+                        <div class="field-head">
+                          <label>Buttons <span class="muted">(optional)</span></label>
+                          <div class="field-head-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="openButtonSetupGuideBtn">Button Setup Guide</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="addButtonRowBtn">Add Button</button>
+                          </div>
+                        </div>
+                        <div id="buttonRows" class="button-rows"></div>
+                        <p class="hint">Use <strong>Button Setup Guide</strong> for required formats and trigger matching rules.</p>
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button type="submit" class="btn btn-block btn-save-command" id="commandSubmitBtn" disabled>Save Command</button>
+                    </div>
+                  </form>
+                  <p id="command-feedback" class="feedback"></p>
+                </div>
+              </article>
+            </div>
+
+            <div class="method-panel" id="command-list-panel" role="tabpanel" aria-labelledby="commandTabList" hidden>
+              <article class="card table-card">
+                <div class="card-header section-head">
+                  <div>
+                    <h2 class="card-title">Command List</h2>
+                    <p class="card-description">All bot commands (built-in and custom) in one place</p>
+                  </div>
+                </div>
+                <div class="card-content no-pad">
+                  <div class="table-wrap">
+                    <table class="command-list-table">
+                      <thead>
+                        <tr>
+                          <th>Command</th>
+                          <th>Source</th>
+                          <th>Details</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="command-table-body">
+                        <% const builtInCommandTriggers = new Set(['.schedule', '.schedulelist', '.scheduledelete', '.sch', '.schlist', '.schdel', '.vv', '.sticker', '.s', '.zip', '.unzip', '.pdf2txt', '.maketxt', '.qrcode', '.imagetopdf', '.img2pdf', '.ss', '.ssweb', '.screenshot', '.tts']); %>
+                        <% const builtInCommandRows = [
+                          { name: '.sch', detail: 'Editable via modal', editKey: 'sch' },
+                          { name: '.schlist', detail: 'Editable via modal', editKey: 'schlist' },
+                          { name: '.schdel', detail: 'Editable via modal', editKey: 'schdel' },
+                          { name: '.vv', detail: 'Editable via modal', editKey: 'vv' },
+                          { name: '.sticker', detail: 'Editable via modal', editKey: 'sticker' },
+                          { name: '.zip', detail: 'Editable via modal', editKey: 'zip' },
+                          { name: '.unzip', detail: 'Editable via modal', editKey: 'unzip' },
+                          { name: '.pdf2txt', detail: 'Editable via modal', editKey: 'pdf2txt' },
+                          { name: '.maketxt <teks>', detail: 'Editable via modal', editKey: 'maketxt' },
+                          { name: '.qrcode <teks/link>', detail: 'Editable via modal', editKey: 'qrcode' },
+                          { name: '.imagetopdf', detail: 'Editable via modal', editKey: 'imagetopdf' },
+                          { name: '.ss <url>', detail: 'Editable via modal', editKey: 'ss' },
+                          { name: '.tts <teks>', detail: 'Editable via modal', editKey: 'tts' },
+                        ]; %>
+                        <% builtInCommandRows.forEach((row) => { %>
+                        <tr class="command-row">
+                          <td class="command-name-cell"><span class="command-name"><%= row.name %></span></td>
+                          <td><span class="command-source">Built-in</span></td>
+                          <td class="command-detail-cell"><span class="muted"><%= row.detail %></span></td>
+                          <td class="command-action-cell">
+                            <% if (row.editKey) { %>
+                            <button type="button" class="btn btn-ghost btn-sm btn-edit-builtin-command" data-builtin-command="<%= row.editKey %>">Edit</button>
+                            <% } else { %>
+                            <span class="muted">—</span>
+                            <% } %>
+                          </td>
+                        </tr>
+                        <% }) %>
+
+                        <% const filteredCustomCommands = customCommands.filter((item) => !builtInCommandTriggers.has(String(item.trigger || '').trim().toLowerCase())); %>
+
+                        <% if (!filteredCustomCommands.length) { %>
+                        <tr class="command-row">
+                          <td colspan="4" class="muted command-empty-cell">No custom commands yet (built-in commands are listed above)</td>
+                        </tr>
+                        <% } else { %>
+                        <% filteredCustomCommands.forEach((item) => { %>
+                        <tr class="command-row" data-trigger="<%= item.trigger %>">
+                          <td class="command-name-cell">
+                            <span class="command-name"><%= item.trigger %></span>
+                          </td>
+                          <td><span class="command-source">Custom</span></td>
+                          <td class="command-detail-cell command-content-cell">
+                            <button type="button" class="command-detail-trigger" data-trigger="<%= item.trigger %>" aria-label="View details for <%= item.trigger %>">
+                              <svg class="command-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M9.1 9a3 3 0 1 1 5.2 2c-.8.8-1.8 1.1-2.3 2.1-.1.2-.2.5-.2.9"></path>
+                                <path d="M12 17h.01"></path>
+                              </svg>
+                              <span class="sr-only">View details</span>
+                            </button>
+                          </td>
+                          <td class="command-action-cell">
+                            <button class="btn btn-ghost btn-sm btn-edit-command-modal" data-trigger="<%= item.trigger %>">Edit</button>
+                            <button class="btn btn-ghost btn-sm btn-delete-command" data-trigger="<%= item.trigger %>">Delete</button>
+                          </td>
+                        </tr>
+                        <% }) %>
+                        <% } %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="page" data-page="deleted-messages" id="deleted-messages" hidden>
+            <article class="card table-card">
+              <div class="card-header section-head">
+                <div>
+                  <h2 class="card-title">Deleted Messages</h2>
+                  <p class="card-description">Log of messages deleted by senders — captured automatically with full detail</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="clearDeletedMessagesBtn" <%= !deletedMessages.length ? 'disabled' : '' %>>Clear All</button>
+              </div>
+
+              <div class="card-content" style="padding-bottom: 0; border-bottom: 1px solid var(--border);">
+                <div class="deleted-msgs-toolbar">
+                  <input type="search" id="deletedMsgsSearch" placeholder="Search by sender…" style="max-width: 340px;" />
+                </div>
+              </div>
+
+              <div class="card-content no-pad">
+                <div class="table-wrap">
+                  <table class="deleted-messages-table" id="deletedMessagesTable">
+                    <thead>
+                      <tr>
+                        <th>Sender</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deleted-messages-table-body">
+                      <% if (!deletedMessages.length) { %>
+                      <tr class="dm-empty-row">
+                        <td colspan="2" class="muted" style="text-align: center; padding: 32px;">No deleted messages recorded yet</td>
+                      </tr>
+                      <% } %>
+
+                      <% deletedMessages.forEach((item) => { %>
+                      <tr data-id="<%= item.id %>" data-type="<%= item.type %>" data-chat="<%= item.isGroup ? 'group' : 'personal' %>" data-search="<%= (item.senderName || item.senderId || '') %>">
+                        <td class="dm-col-sender">
+                          <div class="dm-sender-cell">
+                            <span class="dm-sender-name"><%= item.senderName || '-' %></span>
+                            <% if (item.senderId) { %><span class="muted dm-sender-id"><%= item.senderId %></span><% } %>
+                          </div>
+                        </td>
+                        <td class="cell-action">
+                          <div class="dm-action-group">
+                            <button class="btn btn-ghost btn-sm btn-view-deleted-message" title="View message"
+                              data-id="<%= item.id %>"
+                              data-sender="<%= item.senderName || item.senderId || 'Unknown' %>"
+                              data-chat="<%= item.isGroup ? (item.chatName || item.chatId) : item.chatId %>"
+                              data-is-group="<%= item.isGroup ? '1' : '0' %>"
+                              data-type="<%= item.type %>"
+                              data-text="<%= encodeURIComponent(item.text || '') %>"
+                              data-media-url="<%= item.mediaUrl || '' %>"
+                              data-file-name="<%= item.fileName || '' %>"
+                              data-mime="<%= item.mimeType || '' %>"
+                              data-sent-at="<%= item.originalTimestamp ? new Date(item.originalTimestamp).toISOString() : '' %>"
+                              data-deleted-at="<%= item.deletedAt || '' %>">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+                            <button class="btn btn-ghost btn-sm btn-delete-deleted-message" data-id="<%= item.id %>" title="Remove this record">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="page" data-page="osint" id="osint" hidden>
+            <div class="osint-section-dropdown" id="osintSectionDropdown">
+              <button type="button" class="osint-section-dropdown-trigger" id="osintSectionDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="osintSectionNav">
+                <span id="osintSectionDropdownLabel">WA Lookup</span>
+                <svg class="account-settings-dropdown-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <nav class="osint-section-nav" id="osintSectionNav" role="listbox" aria-label="OSINT sections">
+                <button type="button" class="osint-section-tab active" data-osint-tab="wa-lookup" role="option" aria-selected="true">WA Lookup</button>
+                <button type="button" class="osint-section-tab" data-osint-tab="phone-info" role="option" aria-selected="false">Phone Info</button>
+                <button type="button" class="osint-section-tab" data-osint-tab="social-footprint" role="option" aria-selected="false">Social Footprint</button>
+                <button type="button" class="osint-section-tab" data-osint-tab="group-info" role="option" aria-selected="false">Group Info</button>
+                <button type="button" class="osint-section-tab" data-osint-tab="ip-domain" role="option" aria-selected="false">IP / Domain</button>
+                <button type="button" class="osint-section-tab" data-osint-tab="deep-scan" role="option" aria-selected="false">🔍 Deep Scan</button>
+              </nav>
+            </div>
+
+            <!-- WA Lookup Panel -->
+            <div class="osint-panel" id="osint-wa-lookup">
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">WhatsApp Profile Lookup</h2>
+                  <p class="card-description">Check if a number is on WhatsApp and retrieve profile info</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintWaPhone">Phone Number</label>
+                      <input id="osintWaPhone" type="tel" placeholder="60123456789" />
+                      <p class="hint">Use country code or local format. Example: 60123456789 or 0123456789</p>
+                    </div>
+                    <button type="button" class="btn" id="osintWaLookupBtn">Lookup</button>
+                    <p class="feedback" id="osintWaFeedback"></p>
+                  </div>
+                  <div class="osint-result" id="osintWaResult" hidden>
+                    <div class="osint-result-header">
+                      <div class="osint-avatar-wrap">
+                        <img id="osintWaAvatar" src="" alt="Profile picture" class="osint-avatar" hidden />
+                        <div class="osint-avatar-fallback" id="osintWaAvatarFallback" hidden>?</div>
+                      </div>
+                      <div class="osint-result-status">
+                        <span class="badge" id="osintWaStatusBadge">—</span>
+                      </div>
+                    </div>
+                    <div class="osint-result-grid">
+                      <div class="osint-result-row"><span class="osint-result-label">Normalized Number</span><span class="osint-result-value osint-mono" id="osintWaNumber">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">On WhatsApp</span><span class="osint-result-value" id="osintWaExists">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">JID</span><span class="osint-result-value osint-mono" id="osintWaJid">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Status / About</span><span class="osint-result-value" id="osintWaStatus">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Profile Picture</span><span class="osint-result-value" id="osintWaPicStatus">—</span></div>
+                    </div>
+                  </div>
+
+                  <hr class="form-divider" />
+                  <p class="form-section-label">Batch WA Lookup</p>
+                  <div class="field">
+                    <label for="osintWaBatchInput">Phone Numbers (max 25)</label>
+                    <textarea id="osintWaBatchInput" rows="5" placeholder="60123456789&#10;6281234567890&#10;+447700900123"></textarea>
+                    <p class="hint">Satu nombor satu baris. Sesuai untuk semak list lead/customer dengan cepat.</p>
+                  </div>
+                  <div class="field-actions">
+                    <button type="button" class="btn" id="osintWaBatchLookupBtn">Run Batch Check</button>
+                  </div>
+                  <p class="feedback" id="osintWaBatchFeedback"></p>
+
+                  <div class="osint-result" id="osintWaBatchResult" hidden>
+                    <p class="hint" id="osintWaBatchSummary">—</p>
+                    <div class="table-wrap osint-members-table-wrap">
+                      <table class="osint-members-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Input</th>
+                            <th>Normalized</th>
+                            <th>Status</th>
+                            <th>JID</th>
+                          </tr>
+                        </thead>
+                        <tbody id="osintWaBatchTableBody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Phone Info Panel -->
+            <div class="osint-panel" id="osint-phone-info" hidden>
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Phone Number Info</h2>
+                  <p class="card-description">Parse country code, carrier, and line type from a phone number</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintPhoneNumber">Phone Number</label>
+                      <input id="osintPhoneNumber" type="tel" placeholder="60123456789" />
+                      <p class="hint">Enter with country code, example: 60123456789 or +1-800-555-0100</p>
+                    </div>
+                    <button type="button" class="btn" id="osintPhoneLookupBtn">Lookup</button>
+                    <p class="feedback" id="osintPhoneFeedback"></p>
+                  </div>
+                  <div class="osint-result" id="osintPhoneResult" hidden>
+                    <div class="osint-result-grid">
+                      <div class="osint-result-row"><span class="osint-result-label">Valid</span><span class="osint-result-value" id="osintPhoneValid">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Country</span><span class="osint-result-value" id="osintPhoneCountry">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Country Code</span><span class="osint-result-value" id="osintPhoneCountryCode">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Local Format</span><span class="osint-result-value osint-mono" id="osintPhoneLocal">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">International Format</span><span class="osint-result-value osint-mono" id="osintPhoneIntl">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Telco / Pembawa</span><span class="osint-result-value" id="osintPhoneCarrier">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Jenis Talian</span><span class="osint-result-value" id="osintPhoneLineType">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Zon Waktu</span><span class="osint-result-value" id="osintPhoneTimezone">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Masa Semasa di Sana</span><span class="osint-result-value" id="osintPhoneLocalTime">—</span></div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Social Footprint Panel -->
+            <div class="osint-panel" id="osint-social-footprint" hidden>
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Social Footprint (Public Search)</h2>
+                  <p class="card-description">Generate public search links to discover possible social media traces from a phone number.</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintSocialPhone">Phone Number</label>
+                      <input id="osintSocialPhone" type="tel" placeholder="60123456789" />
+                      <p class="hint">This does not bypass privacy settings. It only builds open-source/public search links.</p>
+                    </div>
+                    <button type="button" class="btn" id="osintSocialLookupBtn">Generate Links</button>
+                    <p class="feedback" id="osintSocialFeedback"></p>
+                  </div>
+
+                  <div class="osint-result" id="osintSocialResult" hidden>
+                    <div class="osint-result-grid">
+                      <div class="osint-result-row"><span class="osint-result-label">Normalized</span><span class="osint-result-value osint-mono" id="osintSocialNormalized">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">International</span><span class="osint-result-value osint-mono" id="osintSocialIntl">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Country</span><span class="osint-result-value" id="osintSocialCountry">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Source</span><span class="osint-result-value" id="osintSocialSource">Public search query links</span></div>
+                    </div>
+
+                    <div id="osintSocialLinksBody" style="margin-top:12px;"></div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Group Info Panel -->
+            <div class="osint-panel" id="osint-group-info" hidden>
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">WhatsApp Group Info</h2>
+                  <p class="card-description">Retrieve group name, description, members, and admin list</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintGroupId">Group ID</label>
+                      <input id="osintGroupId" type="text" placeholder="1203630xxxx@g.us" />
+                      <p class="hint">Enter group ID with or without @g.us suffix. Bot must be a member of the group.</p>
+                    </div>
+                    <button type="button" class="btn" id="osintGroupLookupBtn">Lookup</button>
+                    <p class="feedback" id="osintGroupFeedback"></p>
+                  </div>
+                  <div class="osint-result" id="osintGroupResult" hidden>
+                    <div class="osint-result-grid" id="osintGroupBasicGrid">
+                      <div class="osint-result-row"><span class="osint-result-label">Name</span><span class="osint-result-value" id="osintGroupName">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">JID</span><span class="osint-result-value osint-mono" id="osintGroupJid">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Description</span><span class="osint-result-value" id="osintGroupDesc">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Owner</span><span class="osint-result-value osint-mono" id="osintGroupOwner">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Created</span><span class="osint-result-value" id="osintGroupCreated">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Total Members</span><span class="osint-result-value" id="osintGroupMemberCount">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Admins</span><span class="osint-result-value" id="osintGroupAdminCount">—</span></div>
+                    </div>
+                    <div class="osint-members-section" id="osintGroupMembersSection" hidden>
+                      <p class="osint-section-title">Members</p>
+                      <div class="osint-members-tabs">
+                        <button type="button" class="osint-members-tab active" data-members-tab="all">All (<span id="osintMembersAllCount">0</span>)</button>
+                        <button type="button" class="osint-members-tab" data-members-tab="admins">Admins (<span id="osintMembersAdminCount">0</span>)</button>
+                      </div>
+                      <div class="table-wrap osint-members-table-wrap">
+                        <table class="osint-members-table">
+                          <thead><tr><th>#</th><th>JID</th><th>Role</th></tr></thead>
+                          <tbody id="osintGroupMembersList"></tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- Deep Scan Panel -->
+            <div class="osint-panel" id="osint-deep-scan" hidden>
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Deep Scan Nombor</h2>
+                  <p class="card-description">Imbas menyeluruh — telco, WhatsApp, zon waktu &amp; 25+ pautan platform dalam satu klik</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintDeepScanPhone">Nombor Telefon</label>
+                      <input id="osintDeepScanPhone" type="tel" placeholder="60123456789" />
+                      <p class="hint">Guna kod negara. Contoh: 60123456789 atau +60123456789</p>
+                    </div>
+                    <button type="button" class="btn" id="osintDeepScanBtn">🔍 Deep Scan</button>
+                    <p class="feedback" id="osintDeepScanFeedback"></p>
+                  </div>
+
+                  <div id="osintDeepScanResult" hidden>
+                    <!-- Phone Intelligence -->
+                    <div class="osint-deep-section">
+                      <p class="osint-section-title">📱 Maklumat Nombor</p>
+                      <div class="osint-result-grid">
+                        <div class="osint-result-row"><span class="osint-result-label">Negara</span><span class="osint-result-value" id="dsCountry">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Kod Negara</span><span class="osint-result-value osint-mono" id="dsCountryCode">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Format Antarabangsa</span><span class="osint-result-value osint-mono" id="dsIntl">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Format Tempatan</span><span class="osint-result-value osint-mono" id="dsLocal">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Telco / Pembawa</span><span class="osint-result-value" id="dsCarrier">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Jenis Talian</span><span class="osint-result-value" id="dsLineType">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Zon Waktu</span><span class="osint-result-value" id="dsTimezone">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Masa Semasa di Sana</span><span class="osint-result-value" id="dsLocalTime">—</span></div>
+                      </div>
+                    </div>
+
+                    <!-- WhatsApp Status -->
+                    <div class="osint-deep-section">
+                      <p class="osint-section-title">💬 Status WhatsApp</p>
+                      <div class="osint-result-grid">
+                        <div class="osint-result-row"><span class="osint-result-label">Ada di WhatsApp</span><span class="osint-result-value" id="dsWaExists">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Status / About</span><span class="osint-result-value" id="dsWaStatus">—</span></div>
+                        <div class="osint-result-row"><span class="osint-result-label">Gambar Profil</span><span class="osint-result-value" id="dsWaPic">—</span></div>
+                      </div>
+                    </div>
+
+                    <!-- Platform Links -->
+                    <div class="osint-deep-section">
+                      <p class="osint-section-title">🔗 Pautan Platform</p>
+                      <p class="hint" style="margin-bottom:10px;">Klik untuk buka carian. Hasil bergantung kepada kebolehcapaian awam profil.</p>
+                      <div id="osintDeepScanLinks"></div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- IP / Domain Panel -->
+            <div class="osint-panel" id="osint-ip-domain" hidden>
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">IP &amp; Domain Lookup</h2>
+                  <p class="card-description">Geolocation, ISP, and WHOIS data for any IP address or domain</p>
+                </div>
+                <div class="card-content">
+                  <div class="osint-form">
+                    <div class="field field-narrow">
+                      <label for="osintIpQuery">IP Address or Domain</label>
+                      <input id="osintIpQuery" type="text" placeholder="8.8.8.8 or example.com" />
+                      <p class="hint">Enter an IPv4 address or a domain name. Domain will be resolved automatically.</p>
+                    </div>
+                    <button type="button" class="btn" id="osintIpLookupBtn">Lookup</button>
+                    <p class="feedback" id="osintIpFeedback"></p>
+                  </div>
+                  <div class="osint-result" id="osintIpResult" hidden>
+                    <div class="osint-result-grid">
+                      <div class="osint-result-row"><span class="osint-result-label">Resolved IP</span><span class="osint-result-value osint-mono" id="osintIpAddress">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Hostname</span><span class="osint-result-value osint-mono" id="osintIpHostname">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Country</span><span class="osint-result-value" id="osintIpCountry">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Region</span><span class="osint-result-value" id="osintIpRegion">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">City</span><span class="osint-result-value" id="osintIpCity">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Postal Code</span><span class="osint-result-value" id="osintIpPostal">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Coordinates</span><span class="osint-result-value" id="osintIpCoords">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Timezone</span><span class="osint-result-value" id="osintIpTimezone">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">Organization / ISP</span><span class="osint-result-value" id="osintIpOrg">—</span></div>
+                      <div class="osint-result-row"><span class="osint-result-label">ASN</span><span class="osint-result-value osint-mono" id="osintIpAs">—</span></div>
+                    </div>
+                    <p class="hint" style="margin-top:10px;">Data via <a href="https://ipinfo.io" target="_blank" rel="noopener">ipinfo.io</a> free tier. Proxy/VPN/hosting detection requires a paid plan.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="page" data-page="route-list" id="route-list" hidden>
+            <article class="card route-list-shell">
+              <div class="card-header section-head">
+                <div>
+                  <h2 class="card-title">Route List</h2>
+                  <p class="card-description">Overview mode with inline edit mode for route visibility and status.</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="routeListEditModeBtn">Enter Edit Mode</button>
+              </div>
+
+              <div class="card-content route-list-content">
+                <div class="route-list-overview-grid" id="routeListOverviewGrid">
+                  <article class="route-overview-card">
+                    <p class="route-overview-label">Total Routes</p>
+                    <p class="route-overview-value" id="routeListTotalCount">0</p>
+                  </article>
+                  <article class="route-overview-card">
+                    <p class="route-overview-label">Visible Routes</p>
+                    <p class="route-overview-value" id="routeListVisibleCount">0</p>
+                  </article>
+                  <article class="route-overview-card">
+                    <p class="route-overview-label">Public Routes</p>
+                    <p class="route-overview-value" id="routeListPublicCount">0</p>
+                  </article>
+                  <article class="route-overview-card">
+                    <p class="route-overview-label">Enabled Routes</p>
+                    <p class="route-overview-value" id="routeListEnabledCount">0</p>
+                  </article>
+                </div>
+
+                <div class="route-list-toolbar">
+                  <div class="route-list-field">
+                    <label for="routeListSearchInput">Search</label>
+                    <input id="routeListSearchInput" type="search" placeholder="Search by path, method, or purpose" />
+                  </div>
+                  <div class="route-list-field route-list-field-sm">
+                    <label for="routeListMethodFilter">Method</label>
+                    <select id="routeListMethodFilter">
+                      <option value="all">All</option>
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="DELETE">DELETE</option>
+                    </select>
+                  </div>
+                </div>
+
+                <p class="route-list-edit-hint" id="routeListEditHint">Overview mode active. Click Enter Edit Mode to modify visibility and enabled flags.</p>
+
+                <div class="table-wrap route-list-table-wrap">
+                  <table class="route-list-table">
+                    <thead>
+                      <tr>
+                        <th>Method</th>
+                        <th>Path</th>
+                        <th>Purpose</th>
+                        <th>Visibility</th>
+                        <th>Enabled</th>
+                      </tr>
+                    </thead>
+                    <tbody id="routeListTableBody">
+                      <tr data-route-row data-method="GET" data-search="GET / dashboard home" >
+                        <td><span class="badge badge-outline">GET</span></td>
+                        <td class="route-path">/</td>
+                        <td>Dashboard home</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                      <tr data-route-row data-method="GET" data-search="GET /schedule/create public schedule form" >
+                        <td><span class="badge badge-outline">GET</span></td>
+                        <td class="route-path">/schedule/create</td>
+                        <td>Public schedule form</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                      <tr data-route-row data-method="GET" data-search="GET /api/whatsapp/state whatsapp state" >
+                        <td><span class="badge badge-outline">GET</span></td>
+                        <td class="route-path">/api/whatsapp/state</td>
+                        <td>WhatsApp connection state</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                      <tr data-route-row data-method="POST" data-search="POST /api/schedules create schedule" >
+                        <td><span class="badge badge-outline">POST</span></td>
+                        <td class="route-path">/api/schedules</td>
+                        <td>Create a schedule item</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                      <tr data-route-row data-method="POST" data-search="POST /api/messages/send send message" >
+                        <td><span class="badge badge-outline">POST</span></td>
+                        <td class="route-path">/api/messages/send</td>
+                        <td>Send message instantly</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                      <tr data-route-row data-method="DELETE" data-search="DELETE /api/deleted-messages clear deleted records" >
+                        <td><span class="badge badge-outline">DELETE</span></td>
+                        <td class="route-path">/api/deleted-messages</td>
+                        <td>Clear all deleted records</td>
+                        <td>
+                          <select class="route-visibility-select" data-route-visibility disabled>
+                            <option value="public" selected>Public</option>
+                            <option value="internal">Internal</option>
+                          </select>
+                        </td>
+                        <td><label class="switch"><input type="checkbox" data-route-enabled checked disabled /><span class="switch-slider" aria-hidden="true"></span></label></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal" id="commandPreviewModal" hidden>
+      <div class="modal-backdrop" data-close-modal="command-preview"></div>
+      <div class="modal-panel command-preview-panel" role="dialog" aria-modal="true" aria-labelledby="commandPreviewTitle">
+        <button type="button" class="modal-close" id="closeCommandPreviewModal" aria-label="Close preview">&times;</button>
+        <div class="command-preview-viewport" id="commandPreviewViewport">
+          <article class="wa-preview-card">
+            <div class="wa-status-bar">
+              <span class="wa-status-time">2:15 PM</span>
+              <div class="wa-status-icons" aria-hidden="true">
+                <span>◖◗</span>
+                <span>◉</span>
+                <span>▂▄▆</span>
+              </div>
+            </div>
+
+            <header class="wa-chat-header">
+              <span class="wa-back-icon" aria-hidden="true">&#x2039;</span>
+              <div class="wa-preview-avatar">S</div>
+              <div class="wa-preview-meta">
+                <p class="wa-preview-name" id="commandPreviewTitle">Command Preview</p>
+                <p class="wa-preview-status" id="commandPreviewDescription">online</p>
+              </div>
+              <div class="wa-header-actions" aria-hidden="true">
+                <span>&#128222;</span>
+                <span>&#128206;</span>
+                <span>&#8942;</span>
+              </div>
+              <span class="badge badge-outline wa-preview-badge" id="commandPreviewBadge">TEXT</span>
+            </header>
+
+            <div class="wa-chat-window">
+              <div class="wa-chat-conversation">
+                <div class="wa-date-chip" id="commandPreviewDateChip">Today</div>
+
+                <div class="wa-user-bubble">
+                  <p class="wa-user-text" id="commandPreviewIncomingText">!command</p>
+                  <span class="wa-incoming-time" id="commandPreviewIncomingTime">12:00</span>
+                </div>
+
+                <div class="wa-preview-bubble">
+                <div id="commandPreviewMeta" class="command-preview-meta" hidden></div>
+
+                <div class="command-preview-cover-wrap">
+                  <img src="https://avatar.vercel.sh/shadcn1" alt="Command cover" class="command-preview-cover" id="commandPreviewImage" />
+                  <video id="commandPreviewVideo" class="command-preview-media" controls hidden></video>
+                  <audio id="commandPreviewAudio" class="command-preview-audio" controls hidden></audio>
+                  <div id="commandPreviewDocument" class="command-preview-document" hidden>
+                    <span class="badge badge-outline">Document</span>
+                    <a id="commandPreviewDocumentLink" href="#" target="_blank" rel="noopener">Open document</a>
+                  </div>
+                </div>
+
+                <p id="commandPreviewContent" class="command-preview-content" hidden>No content</p>
+
+                <p id="commandPreviewDeliveryHint" class="command-preview-delivery-hint" hidden></p>
+
+                <div id="commandPreviewButtons" class="command-preview-buttons" hidden></div>
+                <span class="wa-preview-time" id="commandPreviewOutgoingTime">12:00 ✓✓</span>
+                </div>
+              </div>
+
+              <div class="wa-composer" aria-hidden="true">
+                <div class="wa-composer-icon">&#9786;</div>
+                <div class="wa-composer-input">Type a message</div>
+                <div class="wa-composer-icon">&#128206;</div>
+                <button type="button" class="wa-composer-send" id="commandPreviewActionBtn">Close Preview</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="scheduleViewModal" hidden>
+      <div class="modal-backdrop" data-close-modal="schedule-view"></div>
+      <div class="modal-panel schedule-view-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scheduleViewModalTitle">
+        <button type="button" class="modal-close" id="closeScheduleViewModal" aria-label="Close schedule details">&times;</button>
+        <article class="schedule-detail-card schedule-detail-card-sm">
+          <header class="card-header schedule-detail-head">
+            <div>
+              <h3 class="card-title" id="scheduleViewModalTitle">Schedule Details</h3>
+              <p class="card-description" id="scheduleViewModalDescription">Compact detail view for this schedule item.</p>
+            </div>
+            <span class="badge badge-outline" id="scheduleModalStatusPill">-</span>
+          </header>
+
+          <div class="card-content schedule-detail-body">
+            <div class="schedule-modal-grid">
+              <p class="schedule-modal-row"><span class="schedule-modal-label">ID</span><span class="schedule-modal-value" id="scheduleModalId">-</span></p>
+              <p class="schedule-modal-row"><span class="schedule-modal-label">Type</span><span class="schedule-modal-value" id="scheduleModalType">-</span></p>
+              <p class="schedule-modal-row"><span class="schedule-modal-label">Target</span><span class="schedule-modal-value schedule-modal-mono" id="scheduleModalTarget">-</span></p>
+              <p class="schedule-modal-row"><span class="schedule-modal-label">Time</span><span class="schedule-modal-value" id="scheduleModalTime">-</span></p>
+              <p class="schedule-modal-row"><span class="schedule-modal-label">Status</span><span class="schedule-modal-value" id="scheduleModalStatus">-</span></p>
+              <p class="schedule-modal-row"><span class="schedule-modal-label">Repeat</span><span class="schedule-modal-value" id="scheduleModalRepeat">-</span></p>
+              <p class="schedule-modal-row schedule-modal-row-message"><span class="schedule-modal-label">Message</span><span class="schedule-modal-value" id="scheduleModalMessage">-</span></p>
+              <p class="schedule-modal-row schedule-modal-row-message" id="scheduleModalMediaRow" hidden><span class="schedule-modal-label">Media</span><span class="schedule-modal-value" id="scheduleModalMedia">-</span></p>
+            </div>
+            <p class="feedback" id="scheduleModalFeedback"></p>
+          </div>
+
+          <footer class="schedule-modal-actions schedule-detail-footer">
+            <button type="button" class="btn btn-outline" id="scheduleModalCloseBtn">Close</button>
+            <button type="button" class="btn btn-outline btn-delete-modal" id="scheduleModalDeleteBtn">Delete Schedule</button>
+          </footer>
+        </article>
+      </div>
+    </div>
+
+    <div class="modal" id="destructiveConfirmModal" hidden>
+      <div class="modal-backdrop" data-close-modal="destructive-confirm"></div>
+      <div
+        class="modal-panel destructive-confirm-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="destructiveConfirmTitle"
+        aria-describedby="destructiveConfirmDescription"
+      >
+        <div class="alert-dialog-header">
+          <span class="alert-dialog-media" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <path d="M10 11v6M14 11v6"></path>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+          </span>
+          <h3 class="card-title" id="destructiveConfirmTitle">Delete item?</h3>
+          <p class="alert-dialog-description" id="destructiveConfirmDescription">This action cannot be undone.</p>
+        </div>
+        <div class="alert-dialog-footer">
+          <button type="button" class="btn btn-outline" id="destructiveConfirmCancelBtn">Cancel</button>
+          <button type="button" class="btn btn-delete-modal" id="destructiveConfirmActionBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="builtInCommandModal" hidden>
+      <div class="modal-backdrop" data-close-modal="builtin-command"></div>
+      <div class="modal-panel schedule-view-modal-panel command-editor-modal-panel" role="dialog" aria-modal="true" aria-labelledby="builtInEditorTitle">
+        <header class="card-header schedule-detail-header">
+          <h3 class="card-title" id="builtInEditorTitle">Edit Built-in Command</h3>
+          <p class="card-description" id="builtInEditorDescription">Update built-in command text and behavior.</p>
+        </header>
+        <div class="card-content schedule-detail-body">
+          <div class="command-detail-popover-editor command-editor-modal-body">
+            <label for="builtInEditorText" id="builtInEditorTextLabel">Response text</label>
+            <textarea id="builtInEditorText" rows="8"></textarea>
+            <div id="builtInEditorButtonsSection" hidden>
+              <div class="command-detail-popover-actions command-detail-popover-inline-actions">
+                <button type="button" class="btn btn-ghost btn-sm" id="builtInEditorAddButtonBtn">Add Button</button>
+              </div>
+              <div id="builtInEditorButtonRows" class="button-rows"></div>
+            </div>
+            <p class="feedback" id="builtInEditorFeedback"></p>
+          </div>
+        </div>
+        <footer class="schedule-modal-actions schedule-detail-footer">
+          <button type="button" class="btn btn-outline" id="builtInEditorCancelBtn">Cancel</button>
+          <button type="button" class="btn btn-outline" id="builtInEditorSaveBtn">Save</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" id="commandDetailModal" hidden>
+      <div class="modal-backdrop" data-close-modal="command-detail"></div>
+      <div class="modal-panel schedule-view-modal-panel command-editor-modal-panel" role="dialog" aria-modal="true" aria-labelledby="commandDetailModalTitle">
+        <button type="button" class="modal-close" id="closeCommandDetailModal" aria-label="Close command details">&times;</button>
+        <header class="card-header schedule-detail-header">
+          <h3 class="card-title" id="commandDetailModalTitle">Command Details</h3>
+          <p class="card-description" id="commandDetailModalDescription">View response, media, and buttons for this command.</p>
+        </header>
+        <div class="card-content schedule-detail-body">
+          <div class="command-detail-popover-editor command-editor-modal-body">
+            <p class="schedule-modal-row"><span class="schedule-modal-label">Trigger</span><span class="schedule-modal-value" id="commandDetailTriggerValue">-</span></p>
+            <p class="schedule-modal-row"><span class="schedule-modal-label">Source</span><span class="schedule-modal-value" id="commandDetailSourceValue">-</span></p>
+            <p class="schedule-modal-row"><span class="schedule-modal-label">Media</span><span class="schedule-modal-value" id="commandDetailMediaValue">-</span></p>
+            <p class="schedule-modal-row"><span class="schedule-modal-label">Buttons</span><span class="schedule-modal-value" id="commandDetailButtonsValue">-</span></p>
+            <p class="schedule-modal-row schedule-modal-row-message"><span class="schedule-modal-label">Response</span><span class="schedule-modal-value" id="commandDetailResponseValue">-</span></p>
+          </div>
+        </div>
+        <footer class="schedule-modal-actions schedule-detail-footer">
+          <button type="button" class="btn btn-outline" id="commandDetailCloseBtn">Close</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" id="customCommandEditModal" hidden>
+      <div class="modal-backdrop" data-close-modal="custom-command-edit"></div>
+      <div class="modal-panel schedule-view-modal-panel command-editor-modal-panel" role="dialog" aria-modal="true" aria-labelledby="customCommandEditorTitle">
+        <header class="card-header schedule-detail-header">
+          <h3 class="card-title" id="customCommandEditorTitle">Edit Custom Command</h3>
+          <p class="card-description" id="customCommandEditorDescription">Edit response, media, and buttons for this custom command.</p>
+        </header>
+        <div class="card-content schedule-detail-body">
+          <input type="hidden" id="customCommandEditOriginalTrigger" />
+          <div class="command-detail-popover-editor command-editor-modal-body">
+            <label for="customCommandEditTrigger">Trigger</label>
+            <input id="customCommandEditTrigger" type="text" readonly />
+
+            <label for="customCommandEditMediaType">Media Type</label>
+            <select id="customCommandEditMediaType">
+              <option value="none">No media</option>
+              <% mediaTypes.forEach((type) => { %>
+              <option value="<%= type %>"><%= type %></option>
+              <% }) %>
+            </select>
+
+            <label for="customCommandEditMediaUrl">Media URL <span class="muted">(optional)</span></label>
+            <input id="customCommandEditMediaUrl" type="text" placeholder="https://..." />
+
+            <label for="customCommandEditFileName">File Name <span class="muted">(document only, optional)</span></label>
+            <input id="customCommandEditFileName" type="text" placeholder="brochure.pdf" />
+
+            <label for="customCommandEditResponse">Text Help</label>
+            <textarea id="customCommandEditResponse" rows="4" placeholder="Reply message..."></textarea>
+
+            <div class="command-detail-popover-actions command-detail-popover-inline-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="customCommandEditAddButtonBtn">Add Button</button>
+            </div>
+            <div id="customCommandEditButtonRows" class="button-rows"></div>
+
+            <p class="feedback" id="customCommandEditFeedback"></p>
+          </div>
+        </div>
+        <footer class="schedule-modal-actions schedule-detail-footer">
+          <button type="button" class="btn btn-outline" id="customCommandEditCancelBtn">Cancel</button>
+          <button type="button" class="btn btn-outline" id="customCommandEditSaveBtn">Save</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" id="buttonSetupGuideModal" hidden>
+      <div class="modal-backdrop" data-close-modal="button-setup-guide"></div>
+      <div class="modal-panel button-setup-guide-modal-panel" role="dialog" aria-modal="true" aria-labelledby="buttonSetupGuideModalTitle">
+        <button type="button" class="modal-close" id="closeButtonSetupGuideModal" aria-label="Close button setup guide">&times;</button>
+        <div class="card-content button-setup-guide-content">
+          <h3 class="card-title" id="buttonSetupGuideModalTitle">Button Setup Guide</h3>
+          <ul class="button-setup-guide-list">
+            <li><strong>Quick Reply Button:</strong> The <strong>Value (id)</strong> MUST match an existing command trigger (example: <code>.hello</code>, <code>.menu1</code>).</li>
+            <li><strong>Single Select:</strong> Each row ID must also match a command trigger.</li>
+            <li><strong>Call Button:</strong> Enter phone number with country code (example: <a href="tel:60123456789">60123456789</a>).</li>
+            <li><strong>Copy Code Button:</strong> Enter the code to copy (example: <code>PROMO2024</code>).</li>
+          </ul>
+          <p class="button-setup-guide-example"><strong>Example:</strong> If you create a command with trigger <strong>.hello</strong>, then add a Quick Reply button with Value = <strong>.hello</strong>. When user clicks the button, it will trigger the <strong>.hello</strong> command.</p>
+          <p class="button-setup-guide-json">For JSON rows format: <code>[{"id":".cmd1","title":"Option 1"},{"id":".cmd2","title":"Option 2"}]</code></p>
+          <div class="schedule-modal-actions">
+            <button type="button" class="btn btn-outline" id="buttonSetupGuideModalCloseBtn">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__SCHEDULES__ = <%- safeJson(schedules) %>;
+      window.__CUSTOM_COMMANDS__ = <%- safeJson(customCommands) %>;
+      window.__CHAT_RESPONSE_SETTINGS__ = <%- safeJson(chatResponseSettings) %>;
+      window.__ACCESS_CONTROL_SETTINGS__ = <%- safeJson(accessControlSettings) %>;
+      window.__BUILT_IN_COMMAND_SETTINGS__ = <%- safeJson(builtInCommandSettings) %>;
+    </script>
+    <script src="/public/app.js" defer></script>
+
+    <!-- Deleted Message Viewer Modal -->
+    <div class="dm-view-modal-backdrop" id="dmViewModalBackdrop" hidden aria-modal="true" role="dialog" aria-labelledby="dmViewModalTitle">
+      <div class="dm-view-modal">
+        <div class="dm-view-modal-header">
+          <div class="dm-view-modal-identity">
+            <div class="dm-view-modal-avatar" id="dmViewModalAvatar" aria-hidden="true">?</div>
+            <div class="dm-view-modal-meta">
+              <h3 class="dm-view-modal-title" id="dmViewModalTitle">Deleted Message</h3>
+              <p class="dm-view-modal-subtitle" id="dmViewModalSubtitle"></p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="dmViewModalClose" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Chat preview area -->
+        <div class="dm-view-chat-area">
+          <!-- Message bubble rendered by JS -->
+          <div class="dm-view-bubble-wrap" id="dmViewBubbleWrap"></div>
+        </div>
+
+        <!-- Meta info below bubble -->
+        <div class="dm-view-modal-footer">
+          <div class="dm-view-meta-grid" id="dmViewMetaGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Selector Modal -->
+    <div class="modal" id="chatSelectorModal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel chat-selector-modal-panel" role="dialog" aria-modal="true" aria-labelledby="chatSelectorModalTitle">
+        <h2 class="modal-title" id="chatSelectorModalTitle">Select Chat or Group</h2>
+        <p class="modal-description" id="chatSelectorModalDesc">Choose a chat to auto-fill the field</p>
+        <div class="chat-selector-table-wrap">
+          <table class="chat-selector-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="chatSelectorList"></tbody>
+          </table>
+        </div>
+        <p class="chat-selector-feedback" id="chatSelectorFeedback" hidden></p>
+      </div>
+    </div>
+  </body>
+</html>
