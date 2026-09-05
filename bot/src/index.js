@@ -700,12 +700,30 @@ export function recordDeletedMessage(key = {}, fallbackText = 'Mesej dipadam.') 
   const senderJid = captured?.senderJid || inferDeletedMessageSender(key) || null;
 
   const logs = loadDeletedMessageLogs();
-  if (logs.some((entry) => entry.id === messageId && entry.chatJid === chatJid)) return false;
-
   const originalText = String(captured?.text || '').trim();
   const fallbackTextValue = String(fallbackText || '').trim() || 'Mesej dipadam.';
   const preservedText = originalText || fallbackTextValue;
   const contentRecovered = Boolean(originalText && originalText !== fallbackTextValue);
+  const existingIndex = logs.findIndex((entry) => entry.id === messageId && entry.chatJid === chatJid);
+
+  if (existingIndex !== -1) {
+    const existing = logs[existingIndex];
+    if (!contentRecovered || existing.contentRecovered) return false;
+
+    logs[existingIndex] = {
+      ...existing,
+      ...captured,
+      id: messageId,
+      chatJid,
+      senderJid,
+      text: preservedText,
+      contentRecovered: true,
+      contentSource: 'captured',
+    };
+    deletedMessageLogs = logs;
+    saveDeletedMessageLogs();
+    return true;
+  }
 
   logs.unshift({
     ...captured,
@@ -3794,7 +3812,7 @@ export async function startBot(overrides = {}) {
 
     for (const msg of messages) {
       try {
-        void captureMessageForAudit(msg);
+        await captureMessageForAudit(msg);
 
         const protocolMessage = msg?.message?.protocolMessage || null;
         const messageStubType = msg?.message?.messageStubType ?? msg?.messageStubType ?? null;
