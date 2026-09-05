@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { CalendarClock, ContactRound, FileAudio, FileText, Image, LoaderCircle, MessageCircleMore, Pencil, Plus, Search, Send, Smartphone, Trash2, Upload, UserRound } from "lucide-react"
+import { AlertCircle, CalendarClock, ContactRound, FileAudio, FileText, Image, Inbox, LoaderCircle, MessageCircleMore, Pencil, Plus, RefreshCw, Search, Send, Smartphone, Trash2, Upload, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -24,7 +24,7 @@ const pageConfig: Record<string, { title: string; description: string; icon: typ
     icon: CalendarClock,
   },
   "bot-delete-message": {
-    title: "Delete Massage",
+    title: "Deleted Messages",
     description: "Semak semula mesej, media, dan perbualan yang dipadam supaya anda boleh lihat kembali kandungannya.",
     icon: Trash2,
   },
@@ -51,13 +51,19 @@ export function WhatsAppMessaging({ page }: WhatsAppMessagingProps) {
   const Icon = config.icon
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4 p-4 md:p-6">
-      <div className="rounded-2xl border border-border/70 bg-card/90 p-4 md:p-5 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Icon className="size-5 text-emerald-500" />
-          <h1 className="text-lg md:text-xl font-bold">{config.title}</h1>
+    <div className="flex flex-col flex-1 min-h-0 gap-5 p-4 md:p-6">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-10 rounded-full bg-emerald-500/10 blur-2xl" />
+        <div className="relative flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Icon className="size-5" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-400">WhatsApp workspace</p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">{config.title}</h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{config.description}</p>
+          </div>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">{config.description}</p>
       </div>
 
       {page === "bot-send-chat" ? <SendChat /> : page === "bot-delete-message" ? <DeletedMessages /> : page === "bot-contact" ? <ContactManager /> : (
@@ -371,6 +377,8 @@ function DeletedMessages() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actioning, setActioning] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<{ type: 'chat' | 'all'; chatJid?: string; title?: string } | null>(null)
   const [selectedChat, setSelectedChat] = useState<{ chatJid: string; title: string; messages: DeletedMessage[] } | null>(null)
 
   const loadMessages = useCallback(async () => {
@@ -390,9 +398,6 @@ function DeletedMessages() {
 
   const deleteChatMessages = useCallback(async (chatJid: string) => {
     if (!chatJid) return
-    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam untuk chat ini?')
-    if (!confirmed) return
-
     try {
       setActioning(chatJid)
       const response = await fetch(token ? `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}?token=${encodeURIComponent(token)}` : `/api/bot/deleted-messages/chat/${encodeURIComponent(chatJid)}`, {
@@ -410,9 +415,6 @@ function DeletedMessages() {
   }, [token])
 
   const clearAllMessages = useCallback(async () => {
-    const confirmed = window.confirm('Padam semua rekod mesej yang dipadam?')
-    if (!confirmed) return
-
     try {
       setActioning('all')
       const response = await fetch(token ? `/api/bot/deleted-messages?token=${encodeURIComponent(token)}` : '/api/bot/deleted-messages', {
@@ -456,6 +458,12 @@ function DeletedMessages() {
       .sort((a, b) => new Date(b.messages[b.messages.length - 1].deletedAt).getTime() - new Date(a.messages[a.messages.length - 1].deletedAt).getTime())
   }, [messages])
 
+  const filteredGroups = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return groupedMessages
+    return groupedMessages.filter((chat) => `${chat.title} ${chat.chatJid} ${chat.previewText}`.toLowerCase().includes(query))
+  }, [groupedMessages, search])
+
   const openChat = (chatJid: string) => {
     const chat = groupedMessages.find((entry) => entry.chatJid === chatJid)
     if (!chat) return
@@ -468,38 +476,45 @@ function DeletedMessages() {
     return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '?'
   }
 
-  if (loading) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Memuatkan rekod...</div>
-  if (error) return <div className="rounded-lg border border-destructive/40 bg-card p-5 text-sm text-destructive">{error}</div>
-  if (!messages.length) return <div className="rounded-lg border border-border/70 bg-card p-5 text-sm text-muted-foreground">Tiada mesej yang dipadam untuk dilihat semula buat masa ini.</div>
+  if (loading) return <div className="rounded-2xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground"><LoaderCircle className="mx-auto mb-3 size-5 animate-spin text-emerald-500" />Memuatkan rekod...</div>
+  if (error) return <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive"><div className="flex items-center gap-2 font-medium"><AlertCircle className="size-4" />{error}</div><Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => void loadMessages()}>Cuba lagi</Button></div>
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button type="button" variant="destructive" size="sm" onClick={() => void clearAllMessages()} disabled={actioning !== null}>
-          {actioning === 'all' ? 'Memadam...' : 'Padam semua rekod'}
-        </Button>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-border/70 bg-card p-4"><p className="text-xs text-muted-foreground">Conversations</p><p className="mt-1 text-2xl font-bold">{groupedMessages.length}</p></div>
+        <div className="rounded-xl border border-border/70 bg-card p-4"><p className="text-xs text-muted-foreground">Recovered messages</p><p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{messages.filter((message) => message.contentRecovered).length}</p></div>
+        <div className="rounded-xl border border-border/70 bg-card p-4"><p className="text-xs text-muted-foreground">Fallback messages</p><p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{messages.filter((message) => !message.contentRecovered).length}</p></div>
       </div>
 
-      <div className="space-y-3">
-        {groupedMessages.map(({ chatJid, title, previewText, messages: chatMessages }) => (
-          <article key={chatJid} className="rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-colors hover:bg-accent/20">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search conversations" className="pl-9" /></div>
+        <Button type="button" variant="outline" size="sm" onClick={() => void loadMessages()} disabled={actioning !== null}><RefreshCw className="size-4" /> Refresh</Button>
+        <Button type="button" variant="destructive" size="sm" onClick={() => setPendingDelete({ type: 'all' })} disabled={actioning !== null || messages.length === 0}><Trash2 className="size-4" /> {actioning === 'all' ? 'Deleting...' : 'Clear all'}</Button>
+      </div>
+
+      {!filteredGroups.length ? <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center"><Inbox className="mx-auto size-8 text-muted-foreground/50" /><p className="mt-3 text-sm font-medium">{messages.length ? 'No conversations found' : 'No deleted messages yet'}</p><p className="mt-1 text-xs text-muted-foreground">Deleted message records will appear here when available.</p></div> : null}
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        {filteredGroups.map(({ chatJid, title, previewText, messages: chatMessages }) => (
+          <article key={chatJid} className="group rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-md">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                   {getInitials(title)}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{title}</p>
-                  <p className="text-[11px] text-muted-foreground">{chatMessages.length} rekod mesej</p>
+                  <p className="text-[11px] text-muted-foreground">{chatMessages.length} deleted {chatMessages.length === 1 ? 'message' : 'messages'}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => openChat(chatJid)}>
-                  View
+                  View messages
                 </Button>
-                <Button type="button" size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => void deleteChatMessages(chatJid)} disabled={actioning !== null}>
-                  {actioning === chatJid ? 'Memadam...' : 'Padam rekod'}
+                <Button type="button" variant="ghost" size="icon" className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setPendingDelete({ type: 'chat', chatJid, title })} disabled={actioning !== null} aria-label={`Delete records for ${title}`}>
+                  <Trash2 className="size-4" />
                 </Button>
               </div>
             </div>
@@ -510,6 +525,21 @@ function DeletedMessages() {
           </article>
         ))}
       </div>
+
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open && actioning === null) setPendingDelete(null) }}>
+        <AlertDialogContentRoot>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingDelete?.type === 'all' ? 'Clear all deleted messages?' : `Delete records for ${pendingDelete?.title ?? 'this chat'}?`}</AlertDialogTitle>
+            <AlertDialogDescription>This action permanently removes the stored records and cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={actioning !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={actioning !== null} onClick={(event) => { event.preventDefault(); if (pendingDelete?.type === 'all') void clearAllMessages().then(() => setPendingDelete(null)); else if (pendingDelete?.chatJid) void deleteChatMessages(pendingDelete.chatJid).then(() => setPendingDelete(null)) }}>
+              {actioning ? 'Deleting...' : 'Delete permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContentRoot>
+      </AlertDialog>
 
       <Dialog open={Boolean(selectedChat)} onOpenChange={(open) => { if (!open) setSelectedChat(null) }}>
         <DialogContent className="max-w-3xl p-0">
