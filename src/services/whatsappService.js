@@ -820,6 +820,14 @@ class WhatsAppService {
       }
     });
 
+    currentSocket.ev.on('messages.delete', async (deleteEvents) => {
+      try {
+        await this.handleMessageDeletes(deleteEvents);
+      } catch (error) {
+        console.error('[WA] Failed to handle message deletion:', error.message);
+      }
+    });
+
     currentSocket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -3059,6 +3067,23 @@ class WhatsAppService {
       if (!chatId || !messageId) continue;
 
       await this.saveDeletedMessage(chatId, messageId, item.key);
+    }
+  }
+
+  async handleMessageDeletes(deleteEvents) {
+    const events = Array.isArray(deleteEvents) ? deleteEvents : [deleteEvents];
+
+    for (const event of events) {
+      const keys = Array.isArray(event?.keys) ? event.keys : [event?.key || event];
+      const parentChatId = event?.jid || event?.remoteJid || '';
+
+      for (const key of keys) {
+        const chatId = key?.remoteJid || parentChatId;
+        const messageId = key?.id;
+        if (!chatId || !messageId) continue;
+
+        await this.saveDeletedMessage(chatId, messageId, key);
+      }
     }
   }
 
